@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# Install java
+sudo yum install -y java screen
+
+# Configure nodename
+sudo su -c 'echo "HOSTNAME={{ node_name }}" >> /etc/sysconfig/network'
+
+# Add new ssh keys
+mkdir hadoop_ssh
+echo "{{ private_key }}" > hadoop_ssh/id_rsa
+echo "{{ public_key }}" > hadoop_ssh/id_rsa.pub
+chmod 600 hadoop_ssh/id_rsa
+sudo cp -r hadoop_ssh/* /root/.ssh
+
+# Add public key to authorized keys
+cd
+cp hadoop_ssh/* .ssh/
+touch .ssh/authorized_keys
+cat {{ public_key }} >> .ssh/authorized_keys
+sudo cp .ssh/authorized_keys /root/.ssh/authorized_keys
+
+# Remove Host checking from ssh
+sudo cp /etc/ssh/ssh_config ssh_config
+sudo chmod 777 ssh_config
+cat >> ssh_config <<- EOM
+Host *
+    StrictHostKeyChecking no
+EOM
+sudo cp ssh_config /etc/ssh/ssh_config

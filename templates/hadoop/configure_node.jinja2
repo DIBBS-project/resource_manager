@@ -1,0 +1,194 @@
+#!/bin/bash
+
+function clean_hadoop() {
+    sudo rm -rf hadoop
+    sudo rm -rf hadoop.*.tgz
+}
+
+function install_hadoop() {
+
+    # Configure an hadoop folder
+    sudo mkdir -p /usr/hadoop
+    sudo chown {{ user }} /usr/hadoop
+
+    # Download Hadoop
+    cd /usr/hadoop
+
+    #wget -O http://www.gtlib.gatech.edu/pub/apache/hadoop/common/hadoop-2.7.1/hadoop-2.7.1.tar.gz
+    curl -O http://www.gtlib.gatech.edu/pub/apache/hadoop/common/hadoop-2.7.1/hadoop-2.7.1.tar.gz
+    tar xzf hadoop-2.7.1.tar.gz
+    mv hadoop-2.7.1 hadoop
+
+    # Configure hadoop node
+    echo "{{node_name}}" > hadoop/etc/hadoop/slaves
+    echo "{{ master_name }}" > hadoop/etc/hadoop/masters
+
+    # Export variables
+    cat >> .bashrc <<- EOM
+{#export HADOOP_HOME=/home/{{ user }}/hadoop#}
+export HADOOP_HOME=/usr/hadoop/hadoop
+export HADOOP_INSTALL=$HADOOP_HOME
+export HADOOP_MAPRED_HOME=$HADOOP_HOME
+export HADOOP_COMMON_HOME=$HADOOP_HOME
+export HADOOP_HDFS_HOME=$HADOOP_HOME
+export YARN_HOME=$HADOOP_HOME
+export HADOOP_COMMON_LIB_NATIVE_DIR=$HADOOP_HOME/lib/native
+export PATH=$PATH:$HADOOP_HOME/sbin:$HADOOP_HOME/bin
+export JAVA_HOME=/usr/lib/jvm/jre-1.8.0-openjdk/
+EOM
+
+    source .bashrc
+    sudo cp .bashrc /etc/environment
+
+    cd hadoop/etc/hadoop
+
+    # Configure Hadoop
+    cat > core-site.xml <<- EOM
+<configuration>
+<property>
+  <name>fs.default.name</name>
+    <value>hdfs://{{ master_name }}:9000</value>
+</property>
+</configuration>
+EOM
+
+    cat > hdfs-site.xml <<- EOM
+<configuration>
+<property>
+ <name>dfs.replication</name>
+ <value>1</value>
+</property>
+
+<property>
+ <name>dfs.permissions</name>
+ <value>false</value>
+</property>
+
+<property>
+  <name>dfs.name.dir</name>
+    <value>file:///home/hadoop/hadoopdata/hdfs/namenode</value>
+</property>
+
+<property>
+  <name>dfs.data.dir</name>
+    <value>file:///home/hadoop/hadoopdata/hdfs/datanode</value>
+</property>
+</configuration>
+EOM
+
+    cat > mapred-site.xml <<- EOM
+<configuration>
+ <property>
+  <name>mapreduce.framework.name</name>
+   <value>yarn</value>
+ </property>
+
+ <property>
+  <name>yarn.app.mapreduce.am.staging-dir</name>
+  <value>/user</value>
+</property>
+</configuration>
+
+EOM
+
+    cat > yarn-site.xml <<- EOM
+<configuration>
+ <property>
+  <name>yarn.nodemanager.aux-services</name>
+    <value>mapreduce_shuffle</value>
+ </property>
+</configuration>
+EOM
+
+    {% if is_master %}
+    # Format namenode
+    cd /usr/hadoop
+    sudo $HADOOP_HOME/bin/hdfs namenode -format
+    {% endif %}
+
+    # Run Hadoop cluster
+    cd /usr/hadoop/
+    cat > start_hadoop.sh <<- EOM
+#!/bin/bash
+source /etc/environment
+{% if is_master %}
+bash $HADOOP_HOME/sbin/start-dfs.sh
+bash $HADOOP_HOME/sbin/start-yarn.sh
+{% else %}
+bash $HADOOP_HOME/sbin/hadoop-daemon.sh start datanode
+{% endif %}
+EOM
+
+    pushd ~
+    sudo cp hadoop_ssh/id_rsa.pub /root/.ssh/id_rsa.pub
+    sudo cp hadoop_ssh/id_rsa /root/.ssh/id_rsa
+    popd
+
+    screen -dm sudo bash start_hadoop.sh
+
+    cat > reload.sh <<- EOM
+#!/bin/bash
+
+ps aux | grep java | grep -v grep | awk '{print $2}' | xargs sudo kill -9
+sudo rm -rf hadoop/logs/
+sudo bash start_hadoop.sh
+EOM
+
+    # Benchmarking hadoop
+    #sudo hadoop/bin/hadoop jar hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.1.jar teragen 10000 input
+    #sudo hadoop/bin/hadoop jar hadoop/share/hadoop/mapreduce/hadoop-mapreduce-examples-2.7.1.jar terasort input output
+
+    sleep 10
+
+{#    popd#}
+}
+
+function hadoop_not_running() {
+    HADOOP_PROCESS_COUNT=$(ps aux | grep "hadoop" | grep "java" | grep -v grep | wc -l)
+    {% if is_master %}
+    HADOOP_PROCESS_EXPECTED_COUNT=2
+    {% else %}
+    HADOOP_PROCESS_EXPECTED_COUNT=1
+    {% endif %}
+    if [ "$HADOOP_PROCESS_COUNT" -ge "$HADOOP_PROCESS_EXPECTED_COUNT" ]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+while hadoop_not_running
+do
+    clean_hadoop
+    install_hadoop
+    sleep 10
+done
+
+touch step0
+{% if is_master %}
+
+cat > configure_webservice.sh <<- EOM
+#!/bin/bash
+
+if rpm -q git
+then
+  # do nothing as git is already installed
+  :
+else
+  sudo yum install -y git
+fi
+
+git clone https://github.com/badock/ChameleonHadoopWebservice.git
+pushd ChameleonHadoopWebservice
+
+sudo yum install -y python-pip
+sudo pip install -r requirements.txt
+bash reset_app.sh
+
+python manage.py runserver 0.0.0.0:8000
+
+popd
+EOM
+
+screen -dm bash configure_webservice.sh # 2>&1 | tee ~/configure_node.log
+{% endif %}

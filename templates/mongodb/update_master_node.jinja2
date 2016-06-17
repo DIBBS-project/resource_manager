@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Configure MongoDB master node
+mongo localhost:27018/admin --eval 'rs.add("{{ node_name }}:27018")'
+sleep 5
+mongo localhost:27017/admin --eval 'db.runCommand({addshard : "rs0/{{ node_name }}:27018"})'

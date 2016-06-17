@@ -1,0 +1,4 @@
+#!/bin/bash
+
+# Generate key from public key located in template folder
+ssh-keygen -f {{ tmp_folder }}/public.key -e -m PKCS8

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Configure hadoop node
+echo "{{node_name}}" >> hadoop/etc/hadoop/slaves
+
+echo {{ master_name }} > hadoop/etc/hadoop/masters
