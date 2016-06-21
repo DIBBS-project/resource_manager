@@ -19,6 +19,12 @@ class User(models.Model):
     USERNAME_FIELD = 'identifier'
 
 
+class Token(models.Model):
+    value = models.TextField(max_length=1000, blank=True, default='')
+    # Relationships
+    user = models.ForeignKey("User", on_delete=models.CASCADE)
+
+
 class Site(models.Model):
     name = models.CharField(max_length=100, blank=False, default='KVM@TACC')
     os_auth_url = models.CharField(max_length=1000, blank=False)

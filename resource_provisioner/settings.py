@@ -37,8 +37,11 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'djangosecure',
+    'sslserver',
     'rest_framework',
-    'rpapp'
+    'rpapp',
+    'demo'
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -70,6 +73,12 @@ TEMPLATES = [
         },
     },
 ]
+
+# Add templates folder
+TEMPLATE_DIRS = (
+    BASE_DIR+"/templates",
+    BASE_DIR+"/demo/templates",
+)
 
 WSGI_APPLICATION = 'resource_provisioner.wsgi.application'
 

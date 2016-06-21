@@ -109,6 +109,7 @@ class ClusterSerializer(serializers.Serializer):
         return Cluster.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
+        from ar_client.apis.softwares_api import SoftwaresApi
         """
         Update and return an existing `Cluster` instance, given the validated data.
         """
@@ -129,7 +130,8 @@ class ClusterSerializer(serializers.Serializer):
 
         software_id = validated_data.get('software_id', instance.software.id)
         if software_id is not None:
-            software = Software.objects.filter(id=software_id).first()
+            # software = Software.objects.filter(id=software_id).first()
+            software = SoftwaresApi().softwares_id_get(id=software_id)
             instance.software = software
 
         if instance.name != "" and instance.private_key != "" and instance.public_key != "":

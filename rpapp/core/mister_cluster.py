@@ -6,9 +6,9 @@ import time
 
 import paramiko
 from novaclient.v2 import client
-from lib.common import *
-from conf import config
-from authenticator import Authenticator
+from rpapp.lib.common import *
+from rpapp.conf import config
+from rpapp.core.authenticator import Authenticator
 import uuid
 
 logging.basicConfig(level=logging.INFO)
@@ -115,7 +115,7 @@ class MisterCluster:
             import novaclient
             os_auth_url = site.os_auth_url
             username = user.username
-            from core.authenticator import Authenticator
+            from rpapp.core.authenticator import Authenticator
             authenticator = Authenticator()
             password = authenticator.decrypt_password("tmp/%s" % (user.username))
             project = user.project
