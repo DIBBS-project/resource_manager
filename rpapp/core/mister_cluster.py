@@ -162,7 +162,9 @@ class MisterCluster:
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 
         is_master = cluster_db_object.get_master_node() is None
-        cluster_type = cluster_db_object.software.name
+        # cluster_type = cluster_db_object.software.name
+        # TODO: change hardcoded
+        cluster_type = 'hadoop'
 
         logging.info("Is this new node a master node? %s" % (is_master))
 

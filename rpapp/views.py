@@ -93,7 +93,7 @@ def user_list(request):
         users = OurUserClass.objects.all()
         serializer = UserSerializer(users, many=True)
         for result in serializer.data:
-            result["password"] = "*" * len(result["password"])
+            result["password"] = '********'
         return Response(serializer.data)
     # elif request.method == 'POST':
     #     data = JSONParser().parse(request)
@@ -234,7 +234,7 @@ def cluster_list(request):
     elif request.method == 'POST':
         from rpapp.core.mister_cluster import MisterCluster
         data = JSONParser().parse(request)
-        required_fields = ["site_id", "software_id", "user_id", "name"]
+        required_fields = ["site_id", "software", "user_id", "name"]
         missing_fields = []
 
         for required_field in required_fields:

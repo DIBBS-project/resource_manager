@@ -52,7 +52,7 @@ MIDDLEWARE_CLASSES = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.auth.middleware.SessionAuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
-    'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # 'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
 
 ROOT_URLCONF = 'resource_provisioner.urls'
@@ -74,11 +74,6 @@ TEMPLATES = [
     },
 ]
 
-# Add templates folder
-TEMPLATE_DIRS = (
-    BASE_DIR+"/templates",
-    BASE_DIR+"/demo/templates",
-)
 
 WSGI_APPLICATION = 'resource_provisioner.wsgi.application'
 

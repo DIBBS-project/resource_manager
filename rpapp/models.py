@@ -46,7 +46,10 @@ class Cluster(models.Model):
         return candidates[0] if len(candidates) > 0 else None
 
     def get_software_name(self):
-        return self.software.name if self.software is not None else None
+        # TODO: fix hardcoded
+        # FIXME
+        # return self.software.name if self.software is not None else None
+        return 'hadoop'
 
     # def user(self):
 
