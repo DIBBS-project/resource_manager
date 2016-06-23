@@ -123,7 +123,7 @@ class AppliancesApi(object):
                                             callback=params.get('callback'))
         return response
 
-    def appliances_id_delete(self, id, **kwargs):
+    def appliances_name_delete(self, name, **kwargs):
         """
         Delete an already existing appliance.
         Delete an already existing appliance. Authentification is required. 
@@ -134,17 +134,17 @@ class AppliancesApi(object):
         >>> def callback_function(response):
         >>>     pprint(response)
         >>>
-        >>> thread = api.appliances_id_delete(id, callback=callback_function)
+        >>> thread = api.appliances_name_delete(name, callback=callback_function)
 
         :param callback function: The callback function
             for asynchronous request. (optional)
-        :param int id: Id of the appliance (required)
+        :param str name: Name of the appliance (required)
         :return: None
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id']
+        all_params = ['name']
         all_params.append('callback')
 
         params = locals()
@@ -152,22 +152,20 @@ class AppliancesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method appliances_id_delete" % key
+                    " to method appliances_name_delete" % key
                 )
             params[key] = val
         del params['kwargs']
 
-        # verify the required parameter 'id' is set
-        if ('id' not in params) or (params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `appliances_id_delete`")
+        # verify the required parameter 'name' is set
+        if ('name' not in params) or (params['name'] is None):
+            raise ValueError("Missing the required parameter `name` when calling `appliances_name_delete`")
 
-        if 'id' in params and params['id'] < 0.0: 
-            raise ValueError("Invalid value for parameter `id` when calling `appliances_id_delete`, must be a value greater than or equal to `0.0`")
 
-        resource_path = '/appliances/{id}/'.replace('{format}', 'json')
+        resource_path = '/appliances/{name}/'.replace('{format}', 'json')
         path_params = {}
-        if 'id' in params:
-            path_params['id'] = params['id']
+        if 'name' in params:
+            path_params['name'] = params['name']
 
         query_params = {}
 
@@ -203,7 +201,7 @@ class AppliancesApi(object):
                                             callback=params.get('callback'))
         return response
 
-    def appliances_id_get(self, id, **kwargs):
+    def appliances_name_get(self, name, **kwargs):
         """
         Get a single appliance.
         Get a single appliance. Authentification is not required. 
@@ -214,17 +212,17 @@ class AppliancesApi(object):
         >>> def callback_function(response):
         >>>     pprint(response)
         >>>
-        >>> thread = api.appliances_id_get(id, callback=callback_function)
+        >>> thread = api.appliances_name_get(name, callback=callback_function)
 
         :param callback function: The callback function
             for asynchronous request. (optional)
-        :param int id: Id of the appliance (required)
+        :param str name: Name of the appliance (required)
         :return: Appliance
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id']
+        all_params = ['name']
         all_params.append('callback')
 
         params = locals()
@@ -232,22 +230,20 @@ class AppliancesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method appliances_id_get" % key
+                    " to method appliances_name_get" % key
                 )
             params[key] = val
         del params['kwargs']
 
-        # verify the required parameter 'id' is set
-        if ('id' not in params) or (params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `appliances_id_get`")
+        # verify the required parameter 'name' is set
+        if ('name' not in params) or (params['name'] is None):
+            raise ValueError("Missing the required parameter `name` when calling `appliances_name_get`")
 
-        if 'id' in params and params['id'] < 0.0: 
-            raise ValueError("Invalid value for parameter `id` when calling `appliances_id_get`, must be a value greater than or equal to `0.0`")
 
-        resource_path = '/appliances/{id}/'.replace('{format}', 'json')
+        resource_path = '/appliances/{name}/'.replace('{format}', 'json')
         path_params = {}
-        if 'id' in params:
-            path_params['id'] = params['id']
+        if 'name' in params:
+            path_params['name'] = params['name']
 
         query_params = {}
 
@@ -283,7 +279,7 @@ class AppliancesApi(object):
                                             callback=params.get('callback'))
         return response
 
-    def appliances_id_patch(self, id, data, **kwargs):
+    def appliances_name_patch(self, name, data, **kwargs):
         """
         Modify an already existing appliance.
         Modify an already existing appliance. Authentification is required. 
@@ -294,18 +290,18 @@ class AppliancesApi(object):
         >>> def callback_function(response):
         >>>     pprint(response)
         >>>
-        >>> thread = api.appliances_id_patch(id, data, callback=callback_function)
+        >>> thread = api.appliances_name_patch(name, data, callback=callback_function)
 
         :param callback function: The callback function
             for asynchronous request. (optional)
-        :param int id: Id of the appliance (required)
+        :param str name: Name of the appliance (required)
         :param AppliancePatch data: Appliance (required)
         :return: Appliance
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id', 'data']
+        all_params = ['name', 'data']
         all_params.append('callback')
 
         params = locals()
@@ -313,25 +309,23 @@ class AppliancesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method appliances_id_patch" % key
+                    " to method appliances_name_patch" % key
                 )
             params[key] = val
         del params['kwargs']
 
-        # verify the required parameter 'id' is set
-        if ('id' not in params) or (params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `appliances_id_patch`")
+        # verify the required parameter 'name' is set
+        if ('name' not in params) or (params['name'] is None):
+            raise ValueError("Missing the required parameter `name` when calling `appliances_name_patch`")
         # verify the required parameter 'data' is set
         if ('data' not in params) or (params['data'] is None):
-            raise ValueError("Missing the required parameter `data` when calling `appliances_id_patch`")
+            raise ValueError("Missing the required parameter `data` when calling `appliances_name_patch`")
 
-        if 'id' in params and params['id'] < 0.0: 
-            raise ValueError("Invalid value for parameter `id` when calling `appliances_id_patch`, must be a value greater than or equal to `0.0`")
 
-        resource_path = '/appliances/{id}/'.replace('{format}', 'json')
+        resource_path = '/appliances/{name}/'.replace('{format}', 'json')
         path_params = {}
-        if 'id' in params:
-            path_params['id'] = params['id']
+        if 'name' in params:
+            path_params['name'] = params['name']
 
         query_params = {}
 
@@ -369,7 +363,7 @@ class AppliancesApi(object):
                                             callback=params.get('callback'))
         return response
 
-    def appliances_id_put(self, id, data, **kwargs):
+    def appliances_name_put(self, name, data, **kwargs):
         """
         Redefine an already existing appliance.
         Redefine an already existing appliance. Authentification is required. 
@@ -380,18 +374,18 @@ class AppliancesApi(object):
         >>> def callback_function(response):
         >>>     pprint(response)
         >>>
-        >>> thread = api.appliances_id_put(id, data, callback=callback_function)
+        >>> thread = api.appliances_name_put(name, data, callback=callback_function)
 
         :param callback function: The callback function
             for asynchronous request. (optional)
-        :param int id: Id of the appliance (required)
+        :param str name: Name of the appliance (required)
         :param AppliancePost data: Appliance (required)
         :return: Appliance
                  If the method is called asynchronously,
                  returns the request thread.
         """
 
-        all_params = ['id', 'data']
+        all_params = ['name', 'data']
         all_params.append('callback')
 
         params = locals()
@@ -399,25 +393,23 @@ class AppliancesApi(object):
             if key not in all_params:
                 raise TypeError(
                     "Got an unexpected keyword argument '%s'"
-                    " to method appliances_id_put" % key
+                    " to method appliances_name_put" % key
                 )
             params[key] = val
         del params['kwargs']
 
-        # verify the required parameter 'id' is set
-        if ('id' not in params) or (params['id'] is None):
-            raise ValueError("Missing the required parameter `id` when calling `appliances_id_put`")
+        # verify the required parameter 'name' is set
+        if ('name' not in params) or (params['name'] is None):
+            raise ValueError("Missing the required parameter `name` when calling `appliances_name_put`")
         # verify the required parameter 'data' is set
         if ('data' not in params) or (params['data'] is None):
-            raise ValueError("Missing the required parameter `data` when calling `appliances_id_put`")
+            raise ValueError("Missing the required parameter `data` when calling `appliances_name_put`")
 
-        if 'id' in params and params['id'] < 0.0: 
-            raise ValueError("Invalid value for parameter `id` when calling `appliances_id_put`, must be a value greater than or equal to `0.0`")
 
-        resource_path = '/appliances/{id}/'.replace('{format}', 'json')
+        resource_path = '/appliances/{name}/'.replace('{format}', 'json')
         path_params = {}
-        if 'id' in params:
-            path_params['id'] = params['id']
+        if 'name' in params:
+            path_params['name'] = params['name']
 
         query_params = {}
 

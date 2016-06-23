@@ -42,43 +42,17 @@ class Action(object):
                                   and the value is json key in definition.
         """
         self.swagger_types = {
-            'id': 'int',
             'name': 'str',
             'scripts': 'list[int]'
         }
 
         self.attribute_map = {
-            'id': 'id',
             'name': 'name',
             'scripts': 'scripts'
         }
 
-        self._id = None
         self._name = None
         self._scripts = None
-
-    @property
-    def id(self):
-        """
-        Gets the id of this Action.
-        Unique identifier representing a specific action
-
-        :return: The id of this Action.
-        :rtype: int
-        """
-        return self._id
-
-    @id.setter
-    def id(self, id):
-        """
-        Sets the id of this Action.
-        Unique identifier representing a specific action
-
-        :param id: The id of this Action.
-        :type: int
-        """
-        
-        self._id = id
 
     @property
     def name(self):
