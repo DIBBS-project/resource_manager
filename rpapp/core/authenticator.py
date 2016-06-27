@@ -10,8 +10,8 @@ class Authenticator(object):
     def generate_public_certification(self, tmp_folder):
 
         variables = {"tmp_folder": tmp_folder}
-        generate_template("authenticator/generate_certificate.jinja2", variables)
         output_file = "%s/generate_certificate" % (tmp_folder)
+        generate_template("authenticator/generate_certificate.jinja2", variables)
         generate_template_file("authenticator/generate_certificate.jinja2", output_file, variables)
         out = check_output(["bash", "%s" % (output_file)])
 

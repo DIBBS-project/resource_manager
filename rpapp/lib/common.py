@@ -44,14 +44,20 @@ def generate_template_file_from_string(string, output_file, context):
     return True
 
 
-def get_template_from_appliance_registry(appliance_name, script_name):
-    from rpapp.ar_client.apis.appliances_api import AppliancesApi
+def get_template_from_appliance_registry(appliance_name, action_name):
     from rpapp.ar_client.apis.scripts_api import ScriptsApi
-    appliance = AppliancesApi().appliances_name_get(appliance_name)
+    script = ScriptsApi().scripts_appliance_action_get(appliance_name, action_name)
     # TODO fix
-    print (appliance)
-    pass
-    return script_name
+    print (script)
+    return script.code
+
+
+def generate_script_from_appliance_registry(appliance, script, output_file, variables):
+    template = get_template_from_appliance_registry(appliance, script)
+    string = generate_template_from_string(template, variables)
+    with open(output_file, "w") as f:
+        f.write(string)
+    return string
 
 
 def detect_floating_ip_from_instance(instance):
@@ -75,15 +81,23 @@ def update_hosts_file(instances, username, key_filename, tmp_folder=None):
 
     for instance in instances:
         floating_ip = detect_floating_ip_from_instance(instance)
+        logging.info("<here>")
         ssh_master = paramiko.SSHClient()
         ssh_master.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh_master.connect(floating_ip, username=username, key_filename=key_filename)
+        logging.info("</here>")
 
         # Send new hosts file to the current instance
         remote_hosts = filter(lambda x: x["name"] != instance.name, hosts)
         update_hosts_file_path = "%s/hosts" % (tmp_folder) if tmp_folder else "tmp/hosts"
-        generate_template_file("common/update_hosts_file.jinja2", update_hosts_file_path,
-                               {"node_name": instance.name, "floating_ip:": floating_ip, "hosts": remote_hosts})
+        # generate_template_file("common/update_hosts_file.jinja2", update_hosts_file_path,
+        #                        {"node_name": instance.name, "floating_ip:": floating_ip, "hosts": remote_hosts})
+        generate_script_from_appliance_registry("common", "update_hosts_file", update_hosts_file_path,
+                                                {
+                                                    "node_name": instance.name,
+                                                    "floating_ip:": floating_ip,
+                                                    "hosts": remote_hosts
+                                                })
 
         sftp_master = ssh_master.open_sftp()
         sftp_master.put(update_hosts_file_path, 'update_hosts_file.sh')

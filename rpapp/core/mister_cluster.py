@@ -96,6 +96,7 @@ class MisterCluster:
             logging.info("a new floating IP will be created for instance (%s)" % (instance.id))
             nova_client.floating_ips.create()
         while not get_an_available_floating_ip():
+            logging.info("Waiting for a new floating IP to be available...")
             time.sleep(5)
         floating_ip = get_an_available_floating_ip()[0]
         logging.info("A floating IP (%s) is available for instance (%s)" % (floating_ip, instance.id))
@@ -227,19 +228,19 @@ class MisterCluster:
         logging.info("Creating user data for the instance")
         user_data_path = "%s/user_data" % (tmp_folder)
 
-        logging.info("Retreiving the user_data template")
-        template = get_template_from_appliance_registry(cluster_type, "user_data")
-
-        user_data = generate_template("%s/user_data.jinja2" % cluster_type, variables)
-        generate_template_file("%s/user_data.jinja2" % cluster_type, user_data_path, variables)
+        logging.info("Retrieving the user_data template")
+        # template = get_template_from_appliance_registry(cluster_type, "user_data")
+        # user_data = generate_template("%s/user_data.jinja2" % cluster_type, variables)
+        # generate_template_file("%s/user_data.jinja2" % cluster_type, user_data_path, variables)
+        user_data = generate_script_from_appliance_registry(cluster_type, "user_data", user_data_path, variables)
         logging.info("User data successfully generated!")
 
-        logging.info("Calling 'provision_new_instance' to create an instance")
+        logging.info("Calling 'provision_new_instance' to create an instance (%s)" % (host.name))
 
         # Provision an instance
         (instance, host) = self.provision_new_instance(nova_client, host, user_data=user_data)
 
-        logging.info("The instance has been created")
+        logging.info("The instance has been created (%s)" % (host.name))
 
         if is_master:
             host.is_master = True
@@ -282,7 +283,8 @@ class MisterCluster:
         # Configure Node
         logging.info("Preparing the new node")
         prepare_node_path = "%s/prepare_node" % (tmp_folder)
-        generate_template_file("%s/prepare_node.jinja2" % cluster_type, prepare_node_path, variables)
+        #generate_template_file("%s/prepare_node.jinja2" % cluster_type, prepare_node_path, variables)
+        generate_script_from_appliance_registry(cluster_type, "prepare_node", prepare_node_path, variables)
 
         sftp = ssh.open_sftp()
         sftp.put(prepare_node_path, 'prepare_node.sh')
@@ -295,7 +297,8 @@ class MisterCluster:
         # Configure cluster node
         logging.info("Configuring node to join the cluster")
         configure_node_path = "%s/configure_node" % tmp_folder
-        generate_template_file("%s/configure_node.jinja2" % cluster_type, configure_node_path, variables)
+        # generate_template_file("%s/configure_node.jinja2" % cluster_type, configure_node_path, variables)
+        generate_script_from_appliance_registry(cluster_type, "configure_node", configure_node_path, variables)
 
         sftp = ssh.open_sftp()
         sftp.put(configure_node_path, 'configure_node.sh')
@@ -317,7 +320,9 @@ class MisterCluster:
             # Send files to the master node
             logging.info("Updating master node to take into account the new node")
             update_master_node_path = "%s/update_master_node" % (tmp_folder)
-            generate_template_file("%s/update_master_node.jinja2" % cluster_type, update_master_node_path, variables)
+            # generate_template_file("%s/update_master_node.jinja2" % cluster_type, update_master_node_path, variables)
+            generate_script_from_appliance_registry(cluster_type, "update_master_node",
+                                                    update_master_node_path, variables)
 
             sftp_master = ssh_master.open_sftp()
             sftp_master.put(update_master_node_path, 'update_master_node.sh')
