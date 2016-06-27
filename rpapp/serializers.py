@@ -72,17 +72,15 @@ class ClusterSerializer(serializers.Serializer):
     # has_password = serializers.BooleanField(default=False)
 
     # Relationships
-    user_id = serializers.IntegerField(read_only=True)
-    site_id = serializers.IntegerField(read_only=True)
-    software_id = serializers.IntegerField(read_only=True)
+    user_id = serializers.IntegerField()
+    site_id = serializers.IntegerField()
+    appliance = serializers.CharField(max_length=100)
 
     # Custom fields
     host_ids = serializers.SerializerMethodField('cluster_hosts')
     master_node_id = serializers.SerializerMethodField('cluster_master_node_id')
     master_node_ip = serializers.SerializerMethodField('cluster_master_node_ip')
     hosts_ips = serializers.SerializerMethodField('cluster_hosts_ips')
-    software_name = serializers.SerializerMethodField('cluster_software_name')
-
 
     def cluster_hosts(self, cluster):
         return map(lambda x: x.id, Host.objects.filter(cluster_id=cluster.id))
@@ -99,8 +97,8 @@ class ClusterSerializer(serializers.Serializer):
         candidates = map(lambda x: x.instance_ip, Host.objects.filter(cluster_id=cluster.id))
         return candidates
 
-    def cluster_software_name(self, cluster):
-        return cluster.get_software_name()
+    def cluster_appliance_name(self, cluster):
+        return cluster.get_appliance_name()
 
     def create(self, validated_data):
         """
@@ -109,7 +107,7 @@ class ClusterSerializer(serializers.Serializer):
         return Cluster.objects.create(**validated_data)
 
     def update(self, instance, validated_data):
-        from ar_client.apis.softwares_api import SoftwaresApi
+        from ar_client.apis.appliances_api import AppliancesApi
         """
         Update and return an existing `Cluster` instance, given the validated data.
         """
@@ -128,11 +126,10 @@ class ClusterSerializer(serializers.Serializer):
             site = Site.objects.filter(id=site_id).first()
             instance.site = site
 
-        software_id = validated_data.get('software_id', instance.software.id)
-        if software_id is not None:
-            # software = Software.objects.filter(id=software_id).first()
-            software = SoftwaresApi().softwares_id_get(id=software_id)
-            instance.software = software
+        appliance_name = validated_data.get('appliance', instance.appliance)
+        if appliance_name is not None:
+            appliance = AppliancesApi().appliances_name_get(name=appliance_name)
+            instance.appliance = appliance
 
         if instance.name != "" and instance.private_key != "" and instance.public_key != "":
             instance.save()

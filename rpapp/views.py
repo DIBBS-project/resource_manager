@@ -234,7 +234,7 @@ def cluster_list(request):
     elif request.method == 'POST':
         from rpapp.core.mister_cluster import MisterCluster
         data = JSONParser().parse(request)
-        required_fields = ["site_id", "software", "user_id", "name"]
+        required_fields = ["site_id", "appliance", "user_id", "name"]
         missing_fields = []
 
         for required_field in required_fields:

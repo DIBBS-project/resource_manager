@@ -13,7 +13,7 @@ class User(models.Model):
     password = models.CharField(max_length=100, blank=False, default='')
     project = models.CharField(max_length=100, blank=False, default='')
     # Authentication
-    api_token = models.TextField(max_length=1000, blank=True, default=str(uuid.uuid4()))
+    api_token = models.TextField(max_length=1000, blank=True, default=generate_uuid)
     security_certificate = models.TextField(max_length=1000, blank=True, default='')
     has_password = models.BooleanField(default=False)
     USERNAME_FIELD = 'identifier'
@@ -39,17 +39,14 @@ class Cluster(models.Model):
     # Relationships
     user = models.ForeignKey("User", on_delete=models.CASCADE)
     site = models.ForeignKey("Site", on_delete=models.CASCADE)
-    software = models.IntegerField()
+    appliance = models.CharField(max_length=100)
 
     def get_master_node(self):
         candidates = Host.objects.filter(cluster_id=self.id).filter(is_master=True)
         return candidates[0] if len(candidates) > 0 else None
 
-    def get_software_name(self):
-        # TODO: fix hardcoded
-        # FIXME
-        # return self.software.name if self.software is not None else None
-        return 'hadoop'
+    def get_appliance_name(self):
+        return str(self.appliance)
 
     # def user(self):
 

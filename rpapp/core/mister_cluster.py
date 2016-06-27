@@ -15,6 +15,7 @@ logging.basicConfig(level=logging.INFO)
 
 authenticator = Authenticator()
 
+
 class MisterCluster:
 
     def __init__(self, parameters=None):
@@ -162,9 +163,8 @@ class MisterCluster:
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 
         is_master = cluster_db_object.get_master_node() is None
-        # cluster_type = cluster_db_object.software.name
-        # TODO: change hardcoded
-        cluster_type = 'hadoop'
+
+        cluster_type = cluster_db_object.appliance
 
         logging.info("Is this new node a master node? %s" % (is_master))
 
@@ -226,6 +226,10 @@ class MisterCluster:
 
         logging.info("Creating user data for the instance")
         user_data_path = "%s/user_data" % (tmp_folder)
+
+        logging.info("Retreiving the user_data template")
+        template = get_template_from_appliance_registry(cluster_type, "user_data")
+
         user_data = generate_template("%s/user_data.jinja2" % cluster_type, variables)
         generate_template_file("%s/user_data.jinja2" % cluster_type, user_data_path, variables)
         logging.info("User data successfully generated!")

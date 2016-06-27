@@ -5,7 +5,7 @@ import os
 import sys
 import time
 import paramiko
-from jinja2 import Environment, FileSystemLoader
+from jinja2 import Environment, FileSystemLoader, Template
 
 logging.basicConfig(level=logging.INFO)
 
@@ -25,11 +25,33 @@ def generate_template(input_file, context):
     return output
 
 
+def generate_template_from_string(string, context):
+    output = Template(string).render(context)
+    return output
+
+
 def generate_template_file(input_file, output_file, context):
     output = generate_template(input_file, context)
     with open(output_file, "w") as f:
         f.write(output)
     return True
+
+
+def generate_template_file_from_string(string, output_file, context):
+    output = generate_template_from_string(string, context)
+    with open(output_file, "w") as f:
+        f.write(output)
+    return True
+
+
+def get_template_from_appliance_registry(appliance_name, script_name):
+    from rpapp.ar_client.apis.appliances_api import AppliancesApi
+    from rpapp.ar_client.apis.scripts_api import ScriptsApi
+    appliance = AppliancesApi().appliances_name_get(appliance_name)
+    # TODO fix
+    print (appliance)
+    pass
+    return script_name
 
 
 def detect_floating_ip_from_instance(instance):
