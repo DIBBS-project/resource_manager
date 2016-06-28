@@ -46,12 +46,6 @@ class MisterCluster:
             logging.error("Could not found the requested flavor (name=%s)" % (flavor_name))
             raise "Could not found the requested flavor (name=%s)" % (flavor_name)
 
-        keypair_name = config.configuration["keypair_name"]
-        keypair = nova_client.keypairs.find(name=keypair_name)
-        if keypair is None:
-            logging.error("Could not found the requested keypair (name=%s)" % (keypair_name))
-            raise "Could not found the requested keypair (name=%s)" % (keypair_name)
-
         # Boot an instance with the selected parameters
         logging.info("Preparing to boot a new nova instance")
         current_hosts_count = len(host.cluster.host_set.all())
@@ -61,7 +55,8 @@ class MisterCluster:
         instance_name = instance_name.lower()
         instance_name = ''.join([i for i in instance_name if i.isalnum()])
         logging.info("Booting a new nova instance with the following name: %s" % (instance_name))
-        instance = nova_client.servers.create(instance_name, image, flavor, key_name=keypair.name, userdata=user_data)
+
+        instance = nova_client.servers.create(instance_name, image, flavor, userdata=user_data)
 
         if host.name == "":
             host.name = instance_name

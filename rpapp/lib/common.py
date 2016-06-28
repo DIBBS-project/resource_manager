@@ -81,7 +81,7 @@ def update_hosts_file(instances, username, key_filename, tmp_folder=None):
 
     for instance in instances:
         floating_ip = detect_floating_ip_from_instance(instance)
-        logging.info("<here>")
+        logging.info("<here> floating IP: %s" % floating_ip)
         ssh_master = paramiko.SSHClient()
         ssh_master.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         ssh_master.connect(floating_ip, username=username, key_filename=key_filename)
