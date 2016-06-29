@@ -108,17 +108,16 @@ class MisterCluster:
 
     def get_novaclient_associated_to_site(self, user, site):
 
-        if not site in self.nova_clients:
-            import novaclient
-            os_auth_url = site.os_auth_url
-            username = user.username
-            from rpapp.core.authenticator import Authenticator
-            authenticator = Authenticator()
-            password = authenticator.decrypt_password("tmp/%s" % (user.username))
-            project = user.project
-            novaclient = novaclient.v2.client.Client(username, password, project, os_auth_url)
-            self.nova_clients[site] = novaclient
-        return self.nova_clients[site]
+        #if not site in self.nova_clients:
+        import novaclient
+        os_auth_url = site.contact_url
+        username = user.username
+        from rpapp.core.authenticator import Authenticator
+        authenticator = Authenticator()
+        password = authenticator.decrypt_password("tmp/%s" % (user.username))
+        project = user.project
+        novaclient = novaclient.v2.client.Client(username, password, project, os_auth_url)
+        return novaclient
 
     def generate_clusters_keypairs(self, cluster):
 
@@ -150,11 +149,13 @@ class MisterCluster:
         # cluster.save()
 
     def add_node_to_cluster(self, host, master=None):
-
+        from rpapp.ar_client.apis.appliances_api import AppliancesApi
+        from rpapp.ar_client.apis.sites_api import SitesApi
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster
-        targetted_site = cluster_db_object.site
+        appliance = AppliancesApi().appliances_name_get(cluster_db_object.appliance)
+        targetted_site = SitesApi().sites_name_get(appliance.site)
         targetted_user = cluster_db_object.user
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 

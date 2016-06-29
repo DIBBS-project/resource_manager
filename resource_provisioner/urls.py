@@ -21,10 +21,6 @@ urlpatterns = patterns('',
     url(r'^users/?$', views.user_list),
     url(r'^users/(?P<pk>[0-9]+)/$', views.user_detail),
 
-    # Sites
-    url(r'^sites/?$', views.site_list),
-    url(r'^sites/(?P<pk>[0-9]+)/$', views.site_detail),
-
     # Clusters
     url(r'^clusters/?$', views.cluster_list),
     url(r'^clusters/(?P<pk>[0-9]+)/$', views.cluster_detail),

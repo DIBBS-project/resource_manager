@@ -25,11 +25,6 @@ class Token(models.Model):
     user = models.ForeignKey("User", on_delete=models.CASCADE)
 
 
-class Site(models.Model):
-    name = models.CharField(max_length=100, blank=False, default='KVM@TACC')
-    os_auth_url = models.CharField(max_length=1000, blank=False)
-
-
 class Cluster(models.Model):
     name = models.CharField(max_length=100, blank=True, default='')
     uuid = models.CharField(max_length=100, blank=False, default=generate_uuid)
@@ -38,7 +33,6 @@ class Cluster(models.Model):
 
     # Relationships
     user = models.ForeignKey("User", on_delete=models.CASCADE)
-    site = models.ForeignKey("Site", on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
 
     def get_master_node(self):

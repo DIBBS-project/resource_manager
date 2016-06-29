@@ -3,9 +3,9 @@
 
 from django.shortcuts import render
 
-from rpapp.models import User, Site, Cluster, Host, Token
+from rpapp.models import User, Cluster, Host, Token
 from rpapp.models import User as OurUserClass
-from rpapp.serializers import UserSerializer, SiteSerializer, ClusterSerializer, HostSerializer
+from rpapp.serializers import UserSerializer, ClusterSerializer, HostSerializer
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -170,55 +170,6 @@ def user_detail(request, pk):
         return Response({"status": "ok"}, status=201)
 
 
-# Methods related to Site
-@api_view(['GET', 'POST'])
-@csrf_exempt
-def site_list(request):
-    """
-    List all code snippets, or create a new site.
-    """
-    if request.method == 'GET':
-        sites = Site.objects.all()
-        serializer = SiteSerializer(sites, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        data = JSONParser().parse(request)
-        serializer = SiteSerializer(data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data, status=201)
-        return Response(serializer.errors, status=400)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@csrf_exempt
-def site_detail(request, pk):
-    """
-    Retrieve, update or delete a site.
-    """
-    try:
-        site = Site.objects.get(pk=pk)
-    except Site.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == 'GET':
-        serializer = SiteSerializer(site)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = SiteSerializer(site, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    elif request.method == 'DELETE':
-        site.delete()
-        return HttpResponse(status=204)
-
-
 # Methods related to Cluster
 @api_view(['GET', 'POST'])
 @csrf_exempt
@@ -234,7 +185,7 @@ def cluster_list(request):
     elif request.method == 'POST':
         from rpapp.core.mister_cluster import MisterCluster
         data = JSONParser().parse(request)
-        required_fields = ["site_id", "appliance", "user_id", "name"]
+        required_fields = ["appliance", "user_id", "name"]
         missing_fields = []
 
         for required_field in required_fields:
@@ -345,11 +296,6 @@ def host_detail(request, pk):
     elif request.method == 'DELETE':
         host.delete()
         return HttpResponse(status=204)
-
-
-if len(Cluster.objects.all()) == 0 and len(OurUserClass.objects.all()) == 0:
-    from rpapp.fixtures import create_infrastructure
-    create_infrastructure()
 
 
 def get_certificate(request, pk):

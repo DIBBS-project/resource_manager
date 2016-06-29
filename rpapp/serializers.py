@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from models import Site, User, Cluster, Host
+from models import User, Cluster, Host
 
 
 class UserSerializer(serializers.Serializer):
@@ -34,35 +34,6 @@ class UserSerializer(serializers.Serializer):
         return instance
 
 
-class SiteSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    name = serializers.CharField(max_length=100, allow_blank=False, default='KVM@TACC')
-    os_auth_url = serializers.CharField(max_length=1000, allow_blank=False, default='KVM@TACC')
-
-    # Custom fields
-    cluster_ids = serializers.SerializerMethodField('site_clusters')
-
-    def site_clusters(self, site):
-        return map(lambda x: x.id, Cluster.objects.filter(site_id=site.id))
-
-    def create(self, validated_data):
-        """
-        Create and return a new `Site` instance, given the validated data.
-        """
-        return Site.objects.create(**validated_data)
-
-    def update(self, instance, validated_data):
-        """
-        Update and return an existing `Site` instance, given the validated data.
-        """
-        instance.name = validated_data.get('name', instance.name)
-        instance.os_auth_url = validated_data.get('os_auth_url', instance.os_auth_url)
-
-        if instance.name != "" and instance.os_auth_url != "":
-            instance.save()
-        return instance
-
-
 class ClusterSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField(max_length=100, allow_blank=False, default='')
@@ -73,7 +44,6 @@ class ClusterSerializer(serializers.Serializer):
 
     # Relationships
     user_id = serializers.IntegerField()
-    site_id = serializers.IntegerField()
     appliance = serializers.CharField(max_length=100)
 
     # Custom fields
@@ -120,11 +90,6 @@ class ClusterSerializer(serializers.Serializer):
         if user_id is not None:
             user = Cluster.objects.filter(id=user_id).first()
             instance.user = user
-
-        site_id = validated_data.get('site_id', instance.site.id)
-        if site_id is not None:
-            site = Site.objects.filter(id=site_id).first()
-            instance.site = site
 
         appliance_name = validated_data.get('appliance', instance.appliance)
         if appliance_name is not None:
