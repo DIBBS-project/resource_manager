@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+<title>README</title>
+<!-- 2016-04-19 Tue 09:08 -->
+<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta  name="generator" content="Org-mode" />
+<meta  name="author" content="Jonathan" />
+<style type="text/css">
+ <!--/*--><![CDATA[/*><!--*/
+  .title  { text-align: center; }
+  .todo   { font-family: monospace; color: red; }
+  .done   { color: green; }
+  .tag    { background-color: #eee; font-family: monospace;
+            padding: 2px; font-size: 80%; font-weight: normal; }
+  .timestamp { color: #bebebe; }
+  .timestamp-kwd { color: #5f9ea0; }
+  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .underline { text-decoration: underline; }
+  #postamble p, #preamble p { font-size: 90%; margin: .2em; }
+  p.verse { margin-left: 3%; }
+  pre {
+    border: 1px solid #ccc;
+    box-shadow: 3px 3px 3px #eee;
+    padding: 8pt;
+    font-family: monospace;
+    overflow: auto;
+    margin: 1.2em;
+  }
+  pre.src {
+    position: relative;
+    overflow: visible;
+    padding-top: 1.2em;
+  }
+  pre.src:before {
+    display: none;
+    position: absolute;
+    background-color: white;
+    top: -10px;
+    right: 10px;
+    padding: 3px;
+    border: 1px solid black;
+  }
+  pre.src:hover:before { display: inline;}
+  pre.src-sh:before    { content: 'sh'; }
+  pre.src-bash:before  { content: 'sh'; }
+  pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
+  pre.src-R:before     { content: 'R'; }
+  pre.src-perl:before  { content: 'Perl'; }
+  pre.src-java:before  { content: 'Java'; }
+  pre.src-sql:before   { content: 'SQL'; }
+
+  table { border-collapse:collapse; }
+  caption.t-above { caption-side: top; }
+  caption.t-bottom { caption-side: bottom; }
+  td, th { vertical-align:top;  }
+  th.right  { text-align: center;  }
+  th.left   { text-align: center;   }
+  th.center { text-align: center; }
+  td.right  { text-align: right;  }
+  td.left   { text-align: left;   }
+  td.center { text-align: center; }
+  dt { font-weight: bold; }
+  .footpara:nth-child(2) { display: inline; }
+  .footpara { display: block; }
+  .footdef  { margin-bottom: 1em; }
+  .figure { padding: 1em; }
+  .figure p { text-align: center; }
+  .inlinetask {
+    padding: 10px;
+    border: 2px solid gray;
+    margin: 10px;
+    background: #ffffcc;
+  }
+  #org-div-home-and-up
+   { text-align: right; font-size: 70%; white-space: nowrap; }
+  textarea { overflow-x: auto; }
+  .linenr { font-size: smaller }
+  .code-highlighted { background-color: #ffff00; }
+  .org-info-js_info-navigation { border-style: none; }
+  #org-info-js_console-label
+    { font-size: 10px; font-weight: bold; white-space: nowrap; }
+  .org-info-js_search-highlight
+    { background-color: #ffff00; color: #000000; font-weight: bold; }
+  /*]]>*/-->
+</style>
+<script type="text/javascript">
+/*
+@licstart  The following is the entire license notice for the
+JavaScript code in this tag.
+
+Copyright (C) 2012-2013 Free Software Foundation, Inc.
+
+The JavaScript code in this tag is free software: you can
+redistribute it and/or modify it under the terms of the GNU
+General Public License (GNU GPL) as published by the Free Software
+Foundation, either version 3 of the License, or (at your option)
+any later version.  The code is distributed WITHOUT ANY WARRANTY;
+without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE.  See the GNU GPL for more details.
+
+As additional permission under GNU GPL version 3 section 7, you
+may distribute non-source (e.g., minimized or compacted) forms of
+that code without the copy of the GNU GPL normally required by
+section 4, provided you include this license notice and a URL
+through which recipients can access the Corresponding Source.
+
+
+@licend  The above is the entire license notice
+for the JavaScript code in this tag.
+*/
+<!--/*--><![CDATA[/*><!--*/
+ function CodeHighlightOn(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(null != target) {
+     elem.cacheClassElem = elem.className;
+     elem.cacheClassTarget = target.className;
+     target.className = "code-highlighted";
+     elem.className   = "code-highlighted";
+   }
+ }
+ function CodeHighlightOff(elem, id)
+ {
+   var target = document.getElementById(id);
+   if(elem.cacheClassElem)
+     elem.className = elem.cacheClassElem;
+   if(elem.cacheClassTarget)
+     target.className = elem.cacheClassTarget;
+ }
+/*]]>*///-->
+</script>
+</head>
+<body>
+<div id="content">
+<h1 class="title">README</h1>
+<div id="table-of-contents">
+<h2>Table of Contents</h2>
+<div id="text-table-of-contents">
+<ul>
+<li><a href="#sec-1">1. ChameleonHadoopWebservice</a>
+<ul>
+<li><a href="#sec-1-1">1.1. Installation</a></li>
+<li><a href="#sec-1-2">1.2. Running</a></li>
+<li><a href="#sec-1-3">1.3. Call the webservice</a></li>
+<li><a href="#sec-1-4">1.4. REST API description</a>
+<ul>
+<li><a href="#sec-1-4-1">1.4.1. Local file system</a></li>
+<li><a href="#sec-1-4-2">1.4.2. HDFS file system</a></li>
+<li><a href="#sec-1-4-3">1.4.3. Hadoop Jobs</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</div>
+</div>
+<div id="outline-container-sec-1" class="outline-2">
+<h2 id="sec-1"><span class="section-number-2">1</span> ChameleonHadoopWebservice</h2>
+<div class="outline-text-2" id="text-1">
+<p>
+This project enables the deployment of clusters on the Chameleon infrastructure.
+It is leveraging the <b>OpenStack API</b>,  the web framework <b>django</b> and the module
+<b>django Rest framework</b> to build a REST API.
+</p>
+</div>
+
+<div id="outline-container-sec-1-1" class="outline-3">
+<h3 id="sec-1-1"><span class="section-number-3">1.1</span> Installation</h3>
+<div class="outline-text-3" id="text-1-1">
+<p>
+The  project  contains  a  <b>requirements.txt</b> files  that  contains  all  python
+dependencies required to  run the tool. To install all  the dependencies run the
+following command:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-shell">pip install -r requirements.txt
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-1-2" class="outline-3">
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> Running</h3>
+<div class="outline-text-3" id="text-1-2">
+<p>
+Launch the webservice with the following commands:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-shell">sudo pip install -r requirements.txt
+bash reset_app.sh
+
+sudo python manage.py runserver 0.0.0.0:8000
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-1-3" class="outline-3">
+<h3 id="sec-1-3"><span class="section-number-3">1.3</span> Call the webservice</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Here is an example program that run an Hadoop job using the Webservice:
+</p>
+
+<div class="org-src-container">
+
+<pre class="src src-shell">#!/usr/bin/env bash
+
+# WARNING: replace the following URL with the adress of your Hadoop master node
+REMOTE_HADOOP_WEBSERVICE_HOST="http://129.114.111.66:8000"
+
+function extract_id {
+
+    RESULT=$(echo $1 | sed 's/.*"id"://g' | sed 's/,.*//g')
+
+    echo "$RESULT"
+}
+
+# Clean HDFS folder used by this example
+curl -H "Content-Type: application/json" -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/rmdir/user/root/
+
+# Upload local files to the application
+curl -i -X POST -F 'data=@test.jar' $REMOTE_HADOOP_WEBSERVICE_HOST/fs/upload/test.jar/
+
+# Copy test.txt to HDFS in the "input" file
+curl -i -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/mkdir/user/root/
+curl -i -X POST -F 'data=@test.txt' $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/upload/user/root/input/
+
+# Create Hadoop job
+HADOOP_JOB_CREATION_OUTPUT=$(curl -H "Content-Type: application/json" -X POST -d "{\"name\": \"test\", \"command\": \"test.jar input output dummyparameter\"}" $REMOTE_HADOOP_WEBSERVICE_HOST/jobs/)
+HADOOP_JOB_ID=$(extract_id $HADOOP_JOB_CREATION_OUTPUT)
+
+# Run "test.jar" with hadoop
+curl -i -X GET  $REMOTE_HADOOP_WEBSERVICE_HOST/run_hadoop_job/$HADOOP_JOB_ID/
+
+sleep 30
+
+# Collect result files: "output" located in HDFS will be copied to the "output.txt" file
+curl -H "Content-Type: application/json" -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/download/user/root/output/part-r-00000/
+
+exit 0
+</pre>
+</div>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4" class="outline-3">
+<h3 id="sec-1-4"><span class="section-number-3">1.4</span> REST API description</h3>
+<div class="outline-text-3" id="text-1-4">
+</div><div id="outline-container-sec-1-4-1" class="outline-4">
+<h4 id="sec-1-4-1"><span class="section-number-4">1.4.1</span> Local file system</h4>
+<div class="outline-text-4" id="text-1-4-1">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">URL</th>
+<th scope="col" class="left">HTTP Method</th>
+<th scope="col" class="left">Action</th>
+<th scope="col" class="left">Supported</th>
+<th scope="col" class="left">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><i>fs/ls/[path]</i></td>
+<td class="left">GET, DELETE</td>
+<td class="left">list (or delete) files located in the given path (path can be empty)</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>fs/mkdir/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">create a new folder in the given path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>fs/rm/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">rm the file located at the given path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>fs/rmdir/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">rm the folder located at the given path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>fs/upload/[path]</i></td>
+<td class="left">POST</td>
+<td class="left">upload a file on the given path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>fs/download/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">download  a file on the given path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4-2" class="outline-4">
+<h4 id="sec-1-4-2"><span class="section-number-4">1.4.2</span> HDFS file system</h4>
+<div class="outline-text-4" id="text-1-4-2">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">URL</th>
+<th scope="col" class="left">HTTP Method</th>
+<th scope="col" class="left">Action</th>
+<th scope="col" class="left">Supported</th>
+<th scope="col" class="left">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><i>hdfs/ls/[path]</i></td>
+<td class="left">GET, DELETE</td>
+<td class="left">list (or delete) files located in the given HDFS path (path can be empty)</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>hdfs/mkdir/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">create a new folder in the given HDFS path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>hdfs/rm/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">rm the file located at the given HDFS path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>hdfs/rmdir/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">rm the folder located at the given HDFS path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>hdfs/upload/[path]</i></td>
+<td class="left">POST</td>
+<td class="left">upload a file on the given HDFS path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>hdfs/download/[path]</i></td>
+<td class="left">GET</td>
+<td class="left">download  a file on the given HDFS path</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+
+<div id="outline-container-sec-1-4-3" class="outline-4">
+<h4 id="sec-1-4-3"><span class="section-number-4">1.4.3</span> Hadoop Jobs</h4>
+<div class="outline-text-4" id="text-1-4-3">
+<table border="2" cellspacing="0" cellpadding="6" rules="groups" frame="hsides">
+
+
+<colgroup>
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+
+<col  class="left" />
+</colgroup>
+<thead>
+<tr>
+<th scope="col" class="left">URL</th>
+<th scope="col" class="left">HTTP Method</th>
+<th scope="col" class="left">Action</th>
+<th scope="col" class="left">Supported</th>
+<th scope="col" class="left">Comment</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td class="left"><i>jobs</i></td>
+<td class="left">GET</td>
+<td class="left">List all "logical" Hadoop jobs (ie a program)</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left"><i>jobs</i></td>
+<td class="left">POST</td>
+<td class="left">Create a new "logicial" Hadoop job</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">jobs/[job<sub>id]</sub>/</td>
+<td class="left">GET</td>
+<td class="left">Get the Hadoop "logical" job that corresponds to the given job<sub>id</sub></td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">jobs/[job<sub>id]</sub>/</td>
+<td class="left">PUT</td>
+<td class="left">Update the "logical" job that corresponds to the given job<sub>id</sub></td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">jobs/[job<sub>id]</sub>/</td>
+<td class="left">DELETE</td>
+<td class="left">Delete the "logical" job that corresponds to the given job<sub>id</sub></td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">run<sub>hadoop</sub><sub>job</sub> <i>[job<sub>id]</sub></i></td>
+<td class="left">GET</td>
+<td class="left">Run an execution of the job given in parameter</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+
+<tr>
+<td class="left">get<sub>running</sub><sub>jobs</sub>/[job<sub>id]</sub>/</td>
+<td class="left">GET</td>
+<td class="left">Get the the history of all executions of every "logical" Hadoop jobs</td>
+<td class="left">Yes</td>
+<td class="left">&#xa0;</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postamble" class="status">
+<p class="author">Author: Jonathan</p>
+<p class="date">Created: 2016-04-19 Tue 09:08</p>
+<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
+</div>
+</body>
+</html>

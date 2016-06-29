@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo adduser {{ user }} || true
+sudo usermod -a -G supergroup {{ user }} || true
+
+sudo -u {{ user }} $HADOOP_HOME/bin/hadoop fs -getmerge -nl /{{ hdfs_path }} tmp/{{ output_file }}

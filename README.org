@@ -1,0 +1,115 @@
+* ChameleonHadoopWebservice
+
+This project enables the deployment of clusters on the Chameleon infrastructure.
+It is leveraging the *OpenStack API*,  the web framework *django* and the module
+*django Rest framework* to build a REST API.
+
+** Installation
+
+The  project  contains  a  *requirements.txt* files  that  contains  all  python
+dependencies required to  run the tool. To install all  the dependencies run the
+following command:
+
+#+BEGIN_src shell
+pip install -r requirements.txt
+#+END_src
+
+** Running
+
+Launch the webservice with the following commands:
+
+#+BEGIN_src shell
+sudo pip install -r requirements.txt
+bash reset_app.sh
+
+sudo python manage.py runserver 0.0.0.0:8000
+#+END_src
+
+** Call the webservice
+
+Here is an example program that run an Hadoop job using the Webservice:
+
+#+BEGIN_src shell
+#!/usr/bin/env bash
+
+set -x
+
+REMOTE_HADOOP_WEBSERVICE_HOST="http://129.114.111.39:8000"
+
+function extract_id {
+
+    RESULT=$(echo $1 | sed 's/.*"id"://g' | sed 's/,.*//g')
+
+    echo "$RESULT"
+}
+
+# Clean output file in FS folder to prevent interference between tests
+curl -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/fs/rm/output.txt/
+
+# Clean HDFS folder used by this example
+curl -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/rmdir/user/root/
+
+# Upload local files to the application
+curl -i -X POST -F 'data=@test.jar' $REMOTE_HADOOP_WEBSERVICE_HOST/fs/upload/test.jar/
+
+# Copy test.txt to HDFS in the "input" file
+curl -i -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/mkdir/user/root/
+curl -i -X POST -F 'data=@test.txt' $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/upload/user/root/input/
+
+# Create Hadoop job
+CALLBACK_URL="http://requestb.in/139dsv41"
+HADOOP_JOB_CREATION_OUTPUT=$(curl -H "Content-Type: application/json" -X POST -d "{\"name\": \"test\", \"command\": \"test.jar input output dummyparameter\", \"callback_url\": \"$CALLBACK_URL\"}" $REMOTE_HADOOP_WEBSERVICE_HOST/jobs/)
+HADOOP_JOB_ID=$(extract_id $HADOOP_JOB_CREATION_OUTPUT)
+
+# Run "test.jar" with hadoop
+curl -i -X GET  $REMOTE_HADOOP_WEBSERVICE_HOST/run_hadoop_job/$HADOOP_JOB_ID/
+
+sleep 30
+
+# Merge content of the "output" folder located in HDFS: the content will be copied to the "output.txt" file
+curl -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/hdfs/mergedir/user/root/output/_/output.txt/
+
+# Download the "output.txt" file
+curl -X GET $REMOTE_HADOOP_WEBSERVICE_HOST/fs/download/output.txt/
+
+
+exit 0
+
+#+END_src
+
+** REST API description
+*** Local file system
+
+| URL                  | HTTP Method | Action                                                               | Supported | Comment |
+|----------------------+-------------+----------------------------------------------------------------------+-----------+---------|
+| /fs/ls/[path]/       | GET, DELETE | list (or delete) files located in the given path (path can be empty) | Yes       |         |
+| /fs/mkdir/[path]/    | GET         | create a new folder in the given path                                | Yes       |         |
+| /fs/rm/[path]/       | GET         | rm the file located at the given path                                | Yes       |         |
+| /fs/rmdir/[path]/    | GET         | rm the folder located at the given path                              | Yes       |         |
+| /fs/upload/[path]/   | POST        | upload a file on the given path                                      | Yes       |         |
+| /fs/download/[path]/ | GET         | download  a file on the given path                                   | Yes       |         |
+
+*** HDFS file system
+
+| URL                    | HTTP Method | Action                                                                    | Supported | Comment |
+|------------------------+-------------+---------------------------------------------------------------------------+-----------+---------|
+| /hdfs/ls/[path]/       | GET, DELETE | list (or delete) files located in the given HDFS path (path can be empty) | Yes       |         |
+| /hdfs/mkdir/[path]/    | GET         | create a new folder in the given HDFS path                                | Yes       |         |
+| /hdfs/rm/[path]/       | GET         | rm the file located at the given HDFS path                                | Yes       |         |
+| /hdfs/rmdir/[path]/    | GET         | rm the folder located at the given HDFS path                              | Yes       |         |
+| /hdfs/upload/[path]/   | POST        | upload a file on the given HDFS path                                      | Yes       |         |
+| /hdfs/download/[path]/ | GET         | download  a file on the given HDFS path                                   | Yes       |         |
+
+*** Hadoop Jobs
+
+| URL                        | HTTP Method | Action                                                               | Supported | Comment |
+|----------------------------+-------------+----------------------------------------------------------------------+-----------+---------|
+| /jobs/                     | GET         | List all "logical" Hadoop jobs (ie a program)                        | Yes       |         |
+| /jobs/                     | POST        | Create a new "logicial" Hadoop job                                   | Yes       |         |
+| jobs/[job_id]/             | GET         | Get the Hadoop "logical" job that corresponds to the given job_id    | Yes       |         |
+| jobs/[job_id]/             | PUT         | Update the "logical" job that corresponds to the given job_id        | Yes       |         |
+| jobs/[job_id]/             | DELETE      | Delete the "logical" job that corresponds to the given job_id        | Yes       |         |
+| run_hadoop_job /[job_id]/  | GET         | Run an execution of the job given in parameter                       | Yes       |         |
+| get_running_jobs/[job_id]/ | GET         | Get the the history of all executions of every "logical" Hadoop jobs | Yes       |         |
+
+

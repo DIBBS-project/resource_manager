@@ -1,0 +1,708 @@
+swagger: '2.0'
+info:
+  title: ChameleonHadoopWebservice
+  description: This project enables the deployment of clusters on the Chameleon infrastructure. It is leveraging the OpenStack API, the web framework django and the module django Rest framework to build a REST API.
+  version: "0.1"
+# the domain of the service
+host: 127.0.0.1:8000
+# array of all schemes that your API supports
+schemes:
+# TODO: Change to HTTPS when not on localhost!
+  - http
+# will be prefixed to all paths
+basePath: /webservice
+consumes:
+  - multipart/form-data
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: Token
+    in: header
+  basic:
+    type: basic
+paths:
+  /fs/run/{path}/:
+    get:
+      summary: Run a bash file located at the given path.
+      description: |
+        Run a bash file located at the given path.
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: The file could be executed. The response corresponds to the execution code.
+          schema:
+            $ref: '#/definitions/Error'
+        500:
+          description: An error happened during the execution of the file could not be executed. The response corresponds to the execution code.
+          schema:
+            type: integer
+
+  /fs/ls/{path}/:
+    get:
+      summary: List the files located at the given path.
+      description: |
+        List the files located at the given path (the path can be empty).
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: The process definitions matching the given Id
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /fs/mkdir/{path}/:
+    get:
+      summary: Create a new folder at the given path.
+      description: |
+        Create a new folder at the given path.
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: Status code of the operation
+          schema:
+            $ref: '#/definitions/StatusCode'
+        500:
+          description: Status code of the operation
+          schema:
+            $ref: '#/definitions/StatusCode'
+
+  /fs/rm/{path}/:
+    get:
+      summary: Remove the file located at the given path.
+      description: |
+        Remove the file located at the given path.
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: Status code of the operation
+          schema:
+            $ref: '#/definitions/StatusCode'
+        500:
+          description: Status code of the operation
+          schema:
+            $ref: '#/definitions/StatusCode'
+
+  /fs/rmdir/{path}/:
+    get:
+      summary: Remove the folder located at the given path.
+      description: |
+        Remove the folder located at the given path.
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: Status code of the operation
+          schema:
+            $ref: '#/definitions/StatusCode'
+        500:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/StatusCode'
+
+  /fs/upload/{path}/:
+    post:
+      summary: Upload a file to the given path.
+      description: |
+        Upload a file to the given path.
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        201:
+          description: The file has been uploaded
+          schema:
+            $ref: '#/definitions/StatusCode'
+
+  /fs/download/{path}/:
+    get:
+      summary: Download the file located at the given path.
+      description: |
+        Download the file located at the given path.
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: path
+          in: path
+          description: Path in the file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: The file will be downloaded
+          schema:
+            type: file
+            
+            
+  /hdfs/ls/{hdfspath}/:
+    get:
+      summary: List the files located at the given HDFS path.
+      description: |
+        List the files located at the given HDFS path (the path can be empty).
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - FS
+      responses:
+        200:
+          description: List of HDFS files that are in the given path
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: The given path could not be found
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /hdfs/mkdir/{hdfspath}/:
+    get:
+      summary: Create a new folder at the given HDFS path.
+      description: |
+        Create a new folder at the given HDFS path.
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+      responses:
+        200:
+          description: The list of the files located in the given path
+
+
+  /hdfs/rm/{hdfspath}/:
+    get:
+      summary: Remove the file located at the given HDFS path.
+      description: |
+        Remove the file located at the given HDFS path.
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+      responses:
+        200:
+          description: The list of the files located in the given path
+        404:
+          description: The given path is not correct
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /hdfs/rmdir/{hdfspath}/:
+    get:
+      summary: Remove the folder located at the given HDFS path.
+      description: |
+        Remove the folder located at the given HDFS path.
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+      responses:
+        200:
+          description: The list of the files located in the given path
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: The given path is not correct
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /hdfs/upload/{hdfspath}/:
+    post:
+      summary: Upload a file to the given HDFS path.
+      description: |
+        Upload a file to the given HDFS path.
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+      responses:
+        200:
+          description: File has been uploaded to HDFS at the given path
+        500:
+          description: An error occured during upload to HDFS
+          schema:
+            $ref: '#/definitions/Error'
+
+  
+  /hdfs/download/{hdfspath}/:
+    get:
+      summary: Download the file located at the given HDFS path.
+      description: |
+        Download the file located at the given HDFS path.
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+      responses:
+        200:
+          description: Download the corresponding file
+        404:
+          description: The requested file cannot be found
+          schema:
+            $ref: '#/definitions/Error'
+
+
+  /hdfs/copytolocal/{hdfspath}/_/{localpath}:
+    get:
+      summary: Copy the file located at the given HDFS path to the given local path.
+      description: |
+        Copy the file located at the given HDFS path to the given local path.
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+        - name: localpath
+          in: path
+          description: Path in the local file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+        - FS
+      responses:
+        200:
+          description: The copy to the local file system is a success
+        500:
+          description: The operation has failed
+          schema:
+            $ref: '#/definitions/Error'
+
+  
+  /hdfs/mergedir/{hdfspath}/_/{localpath}:
+    get:
+      summary: Merge the directories located at the given HDFS path and the given local path.
+      description: |
+        Merge the directories located at the given HDFS path and the given local path.
+      produces:
+        - application/octet-stream
+      parameters:
+        - name: hdfspath
+          in: path
+          description: Path in the HDFS file system
+          required: true
+          type: string
+        - name: localpath
+          in: path
+          description: Path in the local file system
+          required: true
+          type: string
+      tags:
+        - HDFS
+        - FS
+      responses:
+        200:
+          description: The HDFS directory could be merged with the directory located in the local FS
+          schema:
+            $ref: '#/definitions/Unknown'
+        500:
+          description: An error occured during the merge operation
+          schema:
+            $ref: '#/definitions/Error'            
+
+
+  /jobs/:
+    get:
+      summary: List all “logical” Hadoop jobs (ie a programs).
+      description: |
+        List all “logical” Hadoop jobs (ie a programs).
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: The process definitions matching the given Id
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Create a new job
+      description: |
+        Upload a file to the given path.
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: Unknown
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No user with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  
+  /jobs/{id}/:
+    get:
+      summary: Get a single job.
+      description: |
+        Get a single "logical" job.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the job
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: The process definitions matching the given Id
+          schema:
+            $ref: '#/definitions/Job'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary: Redefine an already existing job.
+      description: |
+        Redefine an already existing "logical" job.
+      security:
+        - basic: []
+        - api_key: []
+      
+      parameters:
+        - name: id
+          in: path
+          description: Id of the job
+          required: true
+          type: integer
+          minimum: 0
+        - name: data
+          in: body
+          description: Job
+          required: true
+          schema:
+            $ref: '#/definitions/JobPost'
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: The updated process definition
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    delete:
+      summary: Delete an already existing job.
+      description: |
+        Delete an already existing "logical" job.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the job
+          required: true
+          type: integer
+          minimum: 0
+      security:
+        - basic: []
+        - api_key: []
+      tags:
+        - Hadoop jobs
+      responses:
+        204:
+          description: Process definition correctly deleted
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /run_hadoop_job/{id}/:
+    get:
+      summary: Run an execution of a job.
+      description: |
+        Run an execution of the "logical" job given in parameter.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the job
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: The process definitions matching the given Id
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /get_running_jobs/{id}/:
+    get:
+      summary: Get the the history of all executions of every job.
+      description: |
+        Get the the history of all executions of every “logical” Hadoop job.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the job
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Hadoop jobs
+      responses:
+        200:
+          description: The process definitions matching the given Id
+          schema:
+            $ref: '#/definitions/Unknown'
+        404:
+          description: No process definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+            
+  /register_new_user/:
+    post:
+      summary: Register a new user.
+      description: |
+        Register a new user.
+      parameters:
+        - name: data
+          in: body
+          description: User credentials
+          required: true
+          schema:
+            $ref: '#/definitions/Credentials'
+      tags:
+        - Users
+      responses:
+        200:
+          description: Unknown
+          schema:
+            $ref: '#/definitions/Unknown'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /generate_new_token/:
+    get:
+      summary: Get the authentification token for a user.
+      description: |
+        Get the authentification token for a user by providing his username and password. No authentification is required; however the credentials of the user are part of the request.
+      parameters:
+        - name: username
+          in: header
+          description: Username of the user
+          required: true
+          type: string
+        - name: password
+          in: header
+          description: Password of the user
+          required: true
+          type: string
+      tags:
+        - Users
+      responses:
+        200:
+          description: The authentification token of the user
+          schema:
+            $ref: '#/definitions/TokenResp'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+            
+            
+definitions:
+  StatusCode:
+    type: object
+    properties:
+      status:
+        type: string
+      return_code:
+        type: string
+  Unknown:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique identifier blabla
+      name:
+        type: string
+        description: Name blabla
+  Job:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique identifier representing a specific job
+      name:
+        type: string
+        description: Name given to the job
+      status:
+        type: string
+        description: Status of the job
+      command:
+        type: string
+        description: Command of the job
+      callback_url:
+        type: string
+        description: Callback URL
+      user:
+        type: string
+        description: User
+  JobPost:
+    type: object
+    required:
+      - name
+      - command
+      - callback_url
+    properties:
+      name:
+        type: string
+        description: Name given to the job
+      status:
+        type: string
+        description: Status of the job
+      command:
+        type: string
+        description: Command of the job
+      callback_url:
+        type: string
+        description: Callback URL
+      user:
+        type: string
+        description: User
+  Error:
+    type: object
+    properties:
+      detail:
+        type: string
+  TokenResp:
+    type: object
+    properties:
+      token:
+        type: string
+  Credentials:
+    type: object
+    required:
+      - username
+      - password
+    properties:
+      username:
+        description: Username of the user
+        type: string
+      password:
+        description: Password of the user
+        type: string

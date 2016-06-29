@@ -1,0 +1,6 @@
+#!/bin/bash
+
+sudo adduser {{ user }} || true
+sudo usermod -a -G supergroup {{ user }} || true
+
+sudo -u {{ user }} $HADOOP_HOME/bin/hadoop fs -put tmp/{{ local_path }} /{{ hdfs_path }}

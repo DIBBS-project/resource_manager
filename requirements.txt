@@ -1,0 +1,9 @@
+django==1.8.0
+djangorestframework
+markdown
+django-filter
+jinja2
+python-novaclient
+django-secure
+django-sslserver
+pycurl
