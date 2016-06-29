@@ -29,10 +29,10 @@ paths:
       description: |
         Get the list of all the cluster definitions registered. No authentification is required.
       tags:
-        - cluster definitions
+        - Cluster definitions
       responses:
         200:
-          description: An array of cluster definitions
+          description: An array of Cluster definitions
           schema:
             type: array
             items:
@@ -57,7 +57,7 @@ paths:
           schema:
             $ref: '#/definitions/clustersPost'
       tags:
-        - cluster definitions
+        - Cluster definitions
       responses:
         201:
           description: The newly created cluster definition
@@ -81,10 +81,10 @@ paths:
           type: integer
           minimum: 0
       tags:
-        - cluster definitions
+        - Cluster definitions
       responses:
         200:
-          description: The cluster definitions matching the given Id
+          description: The Cluster definitions matching the given Id
           schema:
             $ref: '#/definitions/clusters'
         404:
@@ -117,7 +117,7 @@ paths:
           schema:
             $ref: '#/definitions/clustersPost'
       tags:
-        - cluster definitions
+        - Cluster definitions
       responses:
         200:
           description: The updated cluster definition
@@ -147,7 +147,7 @@ paths:
         - basic: []
         - api_key: []
       tags:
-        - cluster definitions
+        - Cluster definitions
       responses:
         204:
           description: cluster definition correctly deleted
@@ -162,14 +162,14 @@ paths:
 
   /hosts/:
     get:
-      summary: Get the list of all the host definitions registered.
+      summary: Get the list of all the Host definitions registered.
       description: |
-        Get the list of all the host definitions registered. No authentification is required.
+        Get the list of all the Host definitions registered. No authentification is required.
       tags:
-        - host definitions
+        - Host definitions
       responses:
         200:
-          description: An array of host definitions
+          description: An array of Host definitions
           schema:
             type: array
             items:
@@ -194,7 +194,7 @@ paths:
           schema:
             $ref: '#/definitions/hostsPost'
       tags:
-        - host definitions
+        - Host definitions
       responses:
         201:
           description: The newly created host definition
@@ -217,10 +217,10 @@ paths:
           type: integer
           minimum: 0
       tags:
-        - host definitions
+        - Host definitions
       responses:
         200:
-          description: The host definitions matching the given Id
+          description: The Host definitions matching the given Id
           schema:
             $ref: '#/definitions/hosts'
         404:
