@@ -23,7 +23,7 @@ class MisterCluster:
 
     # I have re-purposed code from: https://github.com/ChameleonCloud/testing/blob/master/tests/test_chi.py
     def provision_new_instance(self, nova_client, host, user_data=None):
-
+        logging.info("Preparing the network for a new nova instance")
         # TODO: network_label is kind of hardcoded: it should be more generic!
         network_label = config.configuration["network_label"]
         network = nova_client.networks.find(label=network_label)
@@ -31,20 +31,25 @@ class MisterCluster:
             logging.error("Could not found the requested network (name=%s)" % (network_label))
             raise "Could not found the requested network (name=%s)" % (network_label)
         nics = [{'net-id': network.id}]
+        logging.info("Successfully prepared the network")
 
         # TODO: image_name is kind of hardcoded: it should be more generic!
+        logging.info("Looking for the image")
         image_name = config.configuration["image_name"]
         image = nova_client.images.find(name=image_name)
         if image is None:
             logging.error("Could not found the requested image (name=%s)" % (image_name))
             raise "Could not found the requested image (name=%s)" % (image_name)
+        logging.info("Successfully found the image")
 
         # TODO: flavor_name is kind of hardcoded: it should be more generic!
+        logging.info("Looking for the flavor")
         flavor_name = config.configuration["flavor_name"]
         flavor = nova_client.flavors.find(name=flavor_name)
         if flavor is None:
             logging.error("Could not found the requested flavor (name=%s)" % (flavor_name))
             raise "Could not found the requested flavor (name=%s)" % (flavor_name)
+        logging.info("Successfully found the flavor")
 
         # Boot an instance with the selected parameters
         logging.info("Preparing to boot a new nova instance")
