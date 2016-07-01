@@ -1,0 +1,430 @@
+swagger: '2.0'
+info:
+  title: Resource provisioner API
+  description: Provision Cloud Computing resources via API.
+  version: "0.1.2"
+# the domain of the service
+host: 127.0.0.1:8000
+# array of all schemes that your API supports
+schemes:
+# TODO: Change to HTTPS when not on localhost!
+  - http
+# will be prefixed to all paths
+basePath: /prapp
+consumes:
+  - application/json
+produces:
+  - application/json
+securityDefinitions:
+  api_key:
+    type: apiKey
+    name: Authorization
+    in: header
+  basic:
+    type: basic
+paths:
+  /clusters/:
+    get:
+      summary: Get the list of all the cluster definitions registered.
+      description: |
+        Get the list of all the cluster definitions registered. No authentification is required.
+      tags:
+        - Cluster definitions
+      responses:
+        200:
+          description: An array of Cluster definitions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/clusters'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Add a new cluster definition.
+      description: |
+        Add a new cluster definition. Authentification is required.
+      security:
+        - basic: []
+        - api_key: []
+      
+      parameters:
+        - name: data
+          in: body
+          description: cluster definition
+          required: true
+          schema:
+            $ref: '#/definitions/clustersPost'
+      tags:
+        - Cluster definitions
+      responses:
+        201:
+          description: The newly created cluster definition
+          schema:
+            $ref: '#/definitions/clusters'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /clusters/{id}/:
+    get:
+      summary: Get a single cluster definition.
+      description: |
+        Get a single cluster definition. Authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster description
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Cluster definitions
+      responses:
+        200:
+          description: The Cluster definitions matching the given Id
+          schema:
+            $ref: '#/definitions/clusters'
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    put:
+      summary: Redefine an already existing cluster definition.
+      description: |
+        Redefine an already existing cluster definition. Authentification is required.
+      security:
+        - basic: []
+        - api_key: []
+      
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster description
+          required: true
+          type: integer
+          minimum: 0
+        - name: data
+          in: body
+          description: cluster definition
+          required: true
+          schema:
+            $ref: '#/definitions/clustersPost'
+      tags:
+        - Cluster definitions
+      responses:
+        200:
+          description: The updated cluster definition
+          schema:
+            $ref: '#/definitions/clusters'
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    
+    delete:
+      summary: Delete an already existing cluster definition.
+      description: |
+        Delete an already existing cluster definition. Authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster description
+          required: true
+          type: integer
+          minimum: 0
+      security:
+        - basic: []
+        - api_key: []
+      tags:
+        - Cluster definitions
+      responses:
+        204:
+          description: cluster definition correctly deleted
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /hosts/:
+    get:
+      summary: Get the list of all the Host definitions registered.
+      description: |
+        Get the list of all the Host definitions registered. No authentification is required.
+      tags:
+        - Host definitions
+      responses:
+        200:
+          description: An array of Host definitions
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/hosts'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    post:
+      summary: Add a new host definition.
+      description: |
+        Add a new host definition. Authentification is required.
+      security:
+        - basic: []
+        - api_key: []
+      
+      parameters:
+        - name: data
+          in: body
+          description: host definition
+          required: true
+          schema:
+            $ref: '#/definitions/hostsPost'
+      tags:
+        - Host definitions
+      responses:
+        201:
+          description: The newly created host definition
+          schema:
+            $ref: '#/definitions/hosts'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /hosts/{id}/:
+    get:
+      summary: Get a single host definition.
+      description: |
+        Get a single host definition. Authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the host description
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Host definitions
+      responses:
+        200:
+          description: The Host definitions matching the given Id
+          schema:
+            $ref: '#/definitions/hosts'
+        404:
+          description: No host definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+    
+            
+  /users/:
+    get:
+      summary: Get the list of all the users.
+      description: |
+        Get the list of all the users. No authentification is required.
+      tags:
+        - Users
+      responses:
+        200:
+          description: An array of users
+          schema:
+            type: array
+            items:
+              $ref: '#/definitions/User'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /users/{id}/:
+    get:
+      summary: Get a single user.
+      description: |
+        Get a single user. No authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the user
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Users
+      responses:
+        200:
+          description: The user matching the given Id
+          schema:
+            $ref: '#/definitions/User'
+        404:
+          description: No user with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+  /api-token-auth/:
+    post:
+      summary: Get the authentification token for a user.
+      description: |
+        Get the authentification token for a user by providing his username and password. No authentification is required; however the credentials of the user are part of the request.
+      parameters:
+        - name: data
+          in: body
+          description: User credentials
+          required: true
+          schema:
+            $ref: '#/definitions/Credentials'
+      tags:
+        - Users
+      responses:
+        200:
+          description: The authentification token of the user
+          schema:
+            $ref: '#/definitions/TokenResp'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+definitions:
+  clusters:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique ID of the cluster
+      name:
+        type: string
+        description: Name given to the cluster
+      uuid:
+        type: integer
+        description: Internal UUID given to the cluster
+      public_key:
+        type: string
+        description: Public key used to identify nodes of the cluster
+      user_id:
+        type: integer
+        description: ID of the user that created the cluster
+      site_id:
+        type: string
+        format: date-time
+        description: ID of the site in which nodes of the cluster are running
+      master_node_id:
+        type: integer
+        description: ID of the master node of the cluster (can be null)
+      master_node_ip:
+        type: integer
+        description: IP address of the master node of the cluster (can be null)
+      hosts_ips:
+        type: array
+        description: IP addresses of nodes of the cluster (can be null)
+        items:
+          type: string
+      hosts_ids:
+        type: array
+        description: IDs of nodes of the cluster (can be null)
+        items:
+          type: string
+
+  clustersPost:
+    type: object
+    required:
+      - user_id
+      - site_id
+      - software_id
+      - name
+    properties:
+      name:
+        description: Name given to the cluster
+        type: string
+      user_id:
+        description: ID of the user that create the cluster
+        type: integer
+      site_id:
+        description: ID of the site where the cluster will be created
+        type: integer
+      software_id:
+        description: ID of the software that will be hosted in the cluster
+        type: integer
+        
+  hosts:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique ID of the host
+      name:
+        type: string
+        description: Name given to the host
+      is_master:
+        type: boolean
+        description: True if the host is a master_node
+      instance_ip:
+        type: string
+        description: IP address of the host
+      cluster_id:
+        type: integer
+        description: ID of the cluster
+
+  hostsPost:
+    type: object
+    required:
+      - cluster_id
+    properties:
+      cluster_id:
+        description: ID of the cluster in which a new node will be added
+        type: integer
+      name:
+        description: Name given to the host
+        type: string
+  
+        
+  User:
+    type: object
+    properties:
+      id:
+        type: integer
+        description: Unique identifier representing a specific user
+      username:
+        type: string
+        description: Name given to the user.
+      definition:
+        type: string
+        description: JSON-formatted string containing all the information required to start the cluster
+  Error:
+    type: object
+    properties:
+      detail:
+        type: string
+  TokenResp:
+    type: object
+    properties:
+      token:
+        type: string
+  Credentials:
+    type: object
+    required:
+      - username
+      - password
+    properties:
+      username:
+        description: Username of the user
+        type: string
+      password:
+        description: Password of the user
+        type: string
