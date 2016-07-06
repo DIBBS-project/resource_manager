@@ -104,7 +104,8 @@ def user_list(request):
     #     return Response(serializer.errors, status=400)
 
     elif request.method == 'POST':
-        data = JSONParser().parse(request)
+        # data = JSONParser().parse(request)
+        data = request.data
         required_fields = ["username", "password", "project"]
         missing_fields = []
 
