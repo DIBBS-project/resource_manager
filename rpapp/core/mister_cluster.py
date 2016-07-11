@@ -155,12 +155,33 @@ class MisterCluster:
 
     def add_node_to_cluster(self, host, master=None):
         from rpapp.ar_client.apis.appliances_api import AppliancesApi
+        from rpapp.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
         from rpapp.ar_client.apis.sites_api import SitesApi
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster
         appliance = AppliancesApi().appliances_name_get(cluster_db_object.appliance)
-        targetted_site = SitesApi().sites_name_get(appliance.site)
+        appliance_impl = None
+        common_appliance_impl = None
+        if len(appliance.implementations) > 0:
+            appliance_impl_name = appliance.implementations[0]
+            try:
+                appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(appliance_impl_name)
+            except:
+                raise Exception("There was an issue while fetching the following appliance implementation %s", appliance_impl_name)
+            try:
+                site = appliance_impl.site
+                candidates = filter(lambda x: x.site==site and x.appliance=="common",
+                                    ApplianceImplementationsApi().appliances_impl_get())
+
+                common_appliance_impl = candidates[0]
+            except:
+                raise Exception("There was an issue while fetching the common appliance linked with this implementation %s", appliance_impl_name)
+
+        if appliance_impl is None or common_appliance_impl is None:
+            raise Exception("Could not find an implementation of the given appliance :(")
+
+        targetted_site = SitesApi().sites_name_get(appliance_impl.site)
         targetted_user = cluster_db_object.user
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 
@@ -233,13 +254,13 @@ class MisterCluster:
         # template = get_template_from_appliance_registry(cluster_type, "user_data")
         # user_data = generate_template("%s/user_data.jinja2" % cluster_type, variables)
         # generate_template_file("%s/user_data.jinja2" % cluster_type, user_data_path, variables)
-        user_data = generate_script_from_appliance_registry(cluster_type, "user_data", user_data_path, variables)
+        user_data = generate_script_from_appliance_registry(appliance_impl.name, "user_data", user_data_path, variables)
         logging.info("User data successfully generated!")
 
         logging.info("Calling 'provision_new_instance' to create an instance (%s)" % (host.name))
 
         # Provision an instance
-        (instance, host) = self.provision_new_instance(nova_client, host, appliance.image_name, user_data=user_data)
+        (instance, host) = self.provision_new_instance(nova_client, host, appliance_impl.image_name, user_data=user_data)
 
         logging.info("The instance has been created (%s)" % (host.name))
 
@@ -253,7 +274,7 @@ class MisterCluster:
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
 
         logging.info("Updating hosts file of nodes %s" % (instances_ids))
-        update_hosts_file(instances, user, key_paths["private"], tmp_folder=tmp_folder)
+        update_hosts_file(instances, user, key_paths["private"], common_appliance_impl.name, tmp_folder=tmp_folder)
         logging.info("Hosts file of nodes %s have been updated" % (instances_ids))
 
         floating_ip = detect_floating_ip_from_instance(instance)
@@ -285,7 +306,7 @@ class MisterCluster:
         logging.info("Preparing the new node")
         prepare_node_path = "%s/prepare_node" % (tmp_folder)
         #generate_template_file("%s/prepare_node.jinja2" % cluster_type, prepare_node_path, variables)
-        generate_script_from_appliance_registry(cluster_type, "prepare_node", prepare_node_path, variables)
+        generate_script_from_appliance_registry(appliance_impl_name, "prepare_node", prepare_node_path, variables)
 
         sftp = ssh.open_sftp()
         sftp.put(prepare_node_path, 'prepare_node.sh')
@@ -299,7 +320,7 @@ class MisterCluster:
         logging.info("Configuring node to join the cluster")
         configure_node_path = "%s/configure_node" % tmp_folder
         # generate_template_file("%s/configure_node.jinja2" % cluster_type, configure_node_path, variables)
-        generate_script_from_appliance_registry(cluster_type, "configure_node", configure_node_path, variables)
+        generate_script_from_appliance_registry(appliance_impl_name, "configure_node", configure_node_path, variables)
 
         sftp = ssh.open_sftp()
         sftp.put(configure_node_path, 'configure_node.sh')
@@ -322,7 +343,7 @@ class MisterCluster:
             logging.info("Updating master node to take into account the new node")
             update_master_node_path = "%s/update_master_node" % (tmp_folder)
             # generate_template_file("%s/update_master_node.jinja2" % cluster_type, update_master_node_path, variables)
-            generate_script_from_appliance_registry(cluster_type, "update_master_node",
+            generate_script_from_appliance_registry(appliance_impl_name, "update_master_node",
                                                     update_master_node_path, variables)
 
             sftp_master = ssh_master.open_sftp()

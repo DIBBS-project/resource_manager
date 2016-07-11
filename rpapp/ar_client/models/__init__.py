@@ -29,6 +29,9 @@ from .action import Action
 from .action_patch import ActionPatch
 from .action_post import ActionPost
 from .appliance import Appliance
+from .appliance_implementation import ApplianceImplementation
+from .appliance_implementation_patch import ApplianceImplementationPatch
+from .appliance_implementation_post import ApplianceImplementationPost
 from .appliance_patch import AppliancePatch
 from .appliance_post import AppliancePost
 from .credentials import Credentials
