@@ -43,22 +43,16 @@ class Appliance(object):
         """
         self.swagger_types = {
             'name': 'str',
-            'image_name': 'str',
-            'site': 'str',
-            'scripts': 'list[int]'
+            'implementations': 'list[str]'
         }
 
         self.attribute_map = {
             'name': 'name',
-            'image_name': 'image_name',
-            'site': 'site',
-            'scripts': 'scripts'
+            'implementations': 'implementations'
         }
 
         self._name = None
-        self._image_name = None
-        self._site = None
-        self._scripts = None
+        self._implementations = None
 
     @property
     def name(self):
@@ -84,73 +78,27 @@ class Appliance(object):
         self._name = name
 
     @property
-    def image_name(self):
+    def implementations(self):
         """
-        Gets the image_name of this Appliance.
-        Name of the image that will be used by the appliance
+        Gets the implementations of this Appliance.
 
-        :return: The image_name of this Appliance.
-        :rtype: str
+
+        :return: The implementations of this Appliance.
+        :rtype: list[str]
         """
-        return self._image_name
+        return self._implementations
 
-    @image_name.setter
-    def image_name(self, image_name):
+    @implementations.setter
+    def implementations(self, implementations):
         """
-        Sets the image_name of this Appliance.
-        Name of the image that will be used by the appliance
+        Sets the implementations of this Appliance.
 
-        :param image_name: The image_name of this Appliance.
-        :type: str
-        """
-        
-        self._image_name = image_name
 
-    @property
-    def site(self):
-        """
-        Gets the site of this Appliance.
-        Name of the site to use
-
-        :return: The site of this Appliance.
-        :rtype: str
-        """
-        return self._site
-
-    @site.setter
-    def site(self, site):
-        """
-        Sets the site of this Appliance.
-        Name of the site to use
-
-        :param site: The site of this Appliance.
-        :type: str
+        :param implementations: The implementations of this Appliance.
+        :type: list[str]
         """
         
-        self._site = site
-
-    @property
-    def scripts(self):
-        """
-        Gets the scripts of this Appliance.
-
-
-        :return: The scripts of this Appliance.
-        :rtype: list[int]
-        """
-        return self._scripts
-
-    @scripts.setter
-    def scripts(self, scripts):
-        """
-        Sets the scripts of this Appliance.
-
-
-        :param scripts: The scripts of this Appliance.
-        :type: list[int]
-        """
-        
-        self._scripts = scripts
+        self._implementations = implementations
 
     def to_dict(self):
         """

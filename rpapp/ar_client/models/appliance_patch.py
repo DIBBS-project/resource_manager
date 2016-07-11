@@ -42,17 +42,14 @@ class AppliancePatch(object):
                                   and the value is json key in definition.
         """
         self.swagger_types = {
-            'name': 'str',
-            'site': 'str'
+            'name': 'str'
         }
 
         self.attribute_map = {
-            'name': 'name',
-            'site': 'site'
+            'name': 'name'
         }
 
         self._name = None
-        self._site = None
 
     @property
     def name(self):
@@ -76,29 +73,6 @@ class AppliancePatch(object):
         """
         
         self._name = name
-
-    @property
-    def site(self):
-        """
-        Gets the site of this AppliancePatch.
-        Name of the site to use
-
-        :return: The site of this AppliancePatch.
-        :rtype: str
-        """
-        return self._site
-
-    @site.setter
-    def site(self, site):
-        """
-        Sets the site of this AppliancePatch.
-        Name of the site to use
-
-        :param site: The site of this AppliancePatch.
-        :type: str
-        """
-        
-        self._site = site
 
     def to_dict(self):
         """

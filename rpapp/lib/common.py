@@ -44,16 +44,16 @@ def generate_template_file_from_string(string, output_file, context):
     return True
 
 
-def get_template_from_appliance_registry(appliance_name, action_name):
+def get_template_from_appliance_registry(appliance_impl_name, action_name):
     from rpapp.ar_client.apis.scripts_api import ScriptsApi
-    script = ScriptsApi().scripts_appliance_action_get(appliance_name, action_name)
+    script = ScriptsApi().scripts_appliance_action_get(appliance_impl_name, action_name)
     # TODO fix
     print (script)
     return script.code
 
 
-def generate_script_from_appliance_registry(appliance, script, output_file, variables):
-    template = get_template_from_appliance_registry(appliance, script)
+def generate_script_from_appliance_registry(appliance_impl_name, script, output_file, variables):
+    template = get_template_from_appliance_registry(appliance_impl_name, script)
     string = generate_template_from_string(template, variables)
     with open(output_file, "w") as f:
         f.write(string)
@@ -72,7 +72,7 @@ def detect_floating_ip_from_instance(instance):
     return floating_ip
 
 
-def update_hosts_file(instances, username, key_filename, tmp_folder=None):
+def update_hosts_file(instances, username, key_filename, common_appliance_impl_name, tmp_folder=None):
     hosts = []
     for instance in instances:
         floating_ip = detect_floating_ip_from_instance(instance)
@@ -92,7 +92,7 @@ def update_hosts_file(instances, username, key_filename, tmp_folder=None):
         update_hosts_file_path = "%s/hosts" % (tmp_folder) if tmp_folder else "tmp/hosts"
         # generate_template_file("common/update_hosts_file.jinja2", update_hosts_file_path,
         #                        {"node_name": instance.name, "floating_ip:": floating_ip, "hosts": remote_hosts})
-        generate_script_from_appliance_registry("common", "update_hosts_file", update_hosts_file_path,
+        generate_script_from_appliance_registry(common_appliance_impl_name, "update_hosts_file", update_hosts_file_path,
                                                 {
                                                     "node_name": instance.name,
                                                     "floating_ip:": floating_ip,

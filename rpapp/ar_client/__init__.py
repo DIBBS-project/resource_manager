@@ -29,6 +29,9 @@ from .models.action import Action
 from .models.action_patch import ActionPatch
 from .models.action_post import ActionPost
 from .models.appliance import Appliance
+from .models.appliance_implementation import ApplianceImplementation
+from .models.appliance_implementation_patch import ApplianceImplementationPatch
+from .models.appliance_implementation_post import ApplianceImplementationPost
 from .models.appliance_patch import AppliancePatch
 from .models.appliance_post import AppliancePost
 from .models.credentials import Credentials
@@ -44,6 +47,7 @@ from .models.user import User
 
 # import apis into sdk package
 from .apis.actions_api import ActionsApi
+from .apis.appliance_implementations_api import ApplianceImplementationsApi
 from .apis.appliances_api import AppliancesApi
 from .apis.scripts_api import ScriptsApi
 from .apis.sites_api import SitesApi
