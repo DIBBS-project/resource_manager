@@ -1,15 +1,11 @@
 #!/usr/bin/env python
 
-import logging
-import os
-import time
-
-import paramiko
 from novaclient.v2 import client
-from rpapp.lib.common import *
+
 from rpapp.conf import config
 from rpapp.core.authenticator import Authenticator
-import uuid
+from rpapp.lib.common import *
+from scheduling_policies import DummySchedulingPolicy as SchedulingPolicy
 
 logging.basicConfig(level=logging.INFO)
 
@@ -113,7 +109,6 @@ class MisterCluster:
 
     def get_novaclient_associated_to_site(self, user, site):
 
-        #if not site in self.nova_clients:
         import novaclient
         os_auth_url = site.contact_url
         username = user.username
@@ -157,26 +152,24 @@ class MisterCluster:
         from rpapp.ar_client.apis.appliances_api import AppliancesApi
         from rpapp.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
         from rpapp.ar_client.apis.sites_api import SitesApi
+        from rpapp.models import Cluster
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster
         appliance = AppliancesApi().appliances_name_get(cluster_db_object.appliance)
-        appliance_impl = None
-        common_appliance_impl = None
-        if len(appliance.implementations) > 0:
-            appliance_impl_name = appliance.implementations[0]
-            try:
-                appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(appliance_impl_name)
-            except:
-                raise Exception("There was an issue while fetching the following appliance implementation %s", appliance_impl_name)
-            try:
-                site = appliance_impl.site
-                candidates = filter(lambda x: x.site==site and x.appliance=="common",
-                                    ApplianceImplementationsApi().appliances_impl_get())
 
-                common_appliance_impl = candidates[0]
-            except:
-                raise Exception("There was an issue while fetching the common appliance linked with this implementation %s", appliance_impl_name)
+        sites = SitesApi().sites_get()
+        implementations = ApplianceImplementationsApi().appliances_impl_get()
+        clusters = Cluster.objects.all()
+
+        (appliance_impl, common_appliance_impl) = SchedulingPolicy().choose_appliance_implementation(
+            appliance,
+            implementations,
+            sites,
+            clusters
+        )
+        appliance_impl_name = appliance_impl.name
+        common_appliance_impl_name = common_appliance_impl.name
 
         if appliance_impl is None or common_appliance_impl is None:
             raise Exception("Could not find an implementation of the given appliance :(")
@@ -186,8 +179,6 @@ class MisterCluster:
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 
         is_master = cluster_db_object.get_master_node() is None
-
-        cluster_type = cluster_db_object.appliance
 
         logging.info("Is this new node a master node? %s" % (is_master))
 
@@ -274,7 +265,7 @@ class MisterCluster:
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
 
         logging.info("Updating hosts file of nodes %s" % (instances_ids))
-        update_hosts_file(instances, user, key_paths["private"], common_appliance_impl.name, tmp_folder=tmp_folder)
+        update_hosts_file(instances, user, key_paths["private"], common_appliance_impl_name, tmp_folder=tmp_folder)
         logging.info("Hosts file of nodes %s have been updated" % (instances_ids))
 
         floating_ip = detect_floating_ip_from_instance(instance)
