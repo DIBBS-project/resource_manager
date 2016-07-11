@@ -43,17 +43,20 @@ class Appliance(object):
         """
         self.swagger_types = {
             'name': 'str',
+            'image_name': 'str',
             'site': 'str',
             'scripts': 'list[int]'
         }
 
         self.attribute_map = {
             'name': 'name',
+            'image_name': 'image_name',
             'site': 'site',
             'scripts': 'scripts'
         }
 
         self._name = None
+        self._image_name = None
         self._site = None
         self._scripts = None
 
@@ -79,6 +82,29 @@ class Appliance(object):
         """
         
         self._name = name
+
+    @property
+    def image_name(self):
+        """
+        Gets the image_name of this Appliance.
+        Name of the image that will be used by the appliance
+
+        :return: The image_name of this Appliance.
+        :rtype: str
+        """
+        return self._image_name
+
+    @image_name.setter
+    def image_name(self, image_name):
+        """
+        Sets the image_name of this Appliance.
+        Name of the image that will be used by the appliance
+
+        :param image_name: The image_name of this Appliance.
+        :type: str
+        """
+        
+        self._image_name = image_name
 
     @property
     def site(self):

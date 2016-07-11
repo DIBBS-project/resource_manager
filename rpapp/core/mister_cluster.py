@@ -22,7 +22,7 @@ class MisterCluster:
         self.nova_clients = {}
 
     # I have re-purposed code from: https://github.com/ChameleonCloud/testing/blob/master/tests/test_chi.py
-    def provision_new_instance(self, nova_client, host, user_data=None):
+    def provision_new_instance(self, nova_client, host, image_name, user_data=None):
         logging.info("Preparing the network for a new nova instance")
         # TODO: network_label is kind of hardcoded: it should be more generic!
         network_label = config.configuration["network_label"]
@@ -35,7 +35,7 @@ class MisterCluster:
 
         # TODO: image_name is kind of hardcoded: it should be more generic!
         logging.info("Looking for the image")
-        image_name = config.configuration["image_name"]
+        # image_name = config.configuration["image_name"]
         image = nova_client.images.find(name=image_name)
         if image is None:
             logging.error("Could not found the requested image (name=%s)" % (image_name))
@@ -239,7 +239,7 @@ class MisterCluster:
         logging.info("Calling 'provision_new_instance' to create an instance (%s)" % (host.name))
 
         # Provision an instance
-        (instance, host) = self.provision_new_instance(nova_client, host, user_data=user_data)
+        (instance, host) = self.provision_new_instance(nova_client, host, appliance.image_name, user_data=user_data)
 
         logging.info("The instance has been created (%s)" % (host.name))
 
