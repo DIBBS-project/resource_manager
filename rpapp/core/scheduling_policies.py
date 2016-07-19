@@ -7,11 +7,9 @@ class AbstractSchedulingPolicy(object):
 
 class DummySchedulingPolicy(AbstractSchedulingPolicy):
 
-    def choose_appliance_implementation(self, appliance, implementations, sites, clusters):
-        # if len(implementations) > 0:
-        #     return implementations[0]
-        # else:
-        #     raise Exception("An empty set of implementations has been provided :(")
+    def choose_appliance_implementation(self, appliance, implementations, sites, clusters, hints=None):
+        if hints is None:
+            hints = []
         appliance_implementations = filter(lambda x: x.appliance == appliance.name, implementations)
         if len(appliance_implementations) > 0:
             appliance_impl = appliance_implementations[0]
@@ -19,7 +17,6 @@ class DummySchedulingPolicy(AbstractSchedulingPolicy):
                 site = appliance_impl.site
                 candidates = filter(lambda x: x.site==site and x.appliance=="common",
                                     implementations)
-
                 common_appliance_impl = candidates[0]
             except:
                 raise Exception("There was an issue while fetching the common appliance linked with this implementation %s", appliance_impl.name)
