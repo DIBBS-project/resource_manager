@@ -126,7 +126,6 @@ def user_list(request):
 
 
 @api_view(['GET', 'PUT', 'DELETE', 'PATCH'])
-@expect_apitoken
 @csrf_exempt
 def user_detail(request, pk):
     """
