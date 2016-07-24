@@ -2,15 +2,15 @@ swagger: '2.0'
 info:
   title: Resource provisioner API
   description: Provision Cloud Computing resources via API.
-  version: "0.1.2"
+  version: "0.1.5"
 # the domain of the service
-host: 127.0.0.1:8000
+host: 127.0.0.1:8002
 # array of all schemes that your API supports
 schemes:
 # TODO: Change to HTTPS when not on localhost!
   - http
 # will be prefixed to all paths
-basePath: /prapp
+#basePath: /rpapp
 consumes:
   - application/json
 produces:
@@ -311,6 +311,9 @@ definitions:
       name:
         type: string
         description: Name given to the cluster
+      appliance:
+        type: string
+        description: Appliance of the cluster
       uuid:
         type: string
         description: Internal UUID given to the cluster
@@ -330,15 +333,6 @@ definitions:
       master_node_ip:
         type: string
         description: IP address of the master node of the cluster (can be null)
-      appliance:
-        type: string
-        description: Appliance used (can be null)
-      appliance_impl:
-        type: string
-        description: Appliance implementation used (can be null)
-      common_appliance_impl:
-        type: string
-        description: Common appliance used (can be null)
       hosts_ips:
         type: array
         description: IP addresses of nodes of the cluster (can be null)
