@@ -265,7 +265,8 @@ def host_list(request):
             host.save()
             mister_cluster = MisterCluster()
             # cluster_id = data["cluster_id"]
-            mister_cluster.add_node_to_cluster(host)
+            if not ("action" in data and data["action"] == "nodeploy"):
+                mister_cluster.add_node_to_cluster(host)
             return Response({"host_id": host.id}, status=201)
 
         return Response({"missing_fields": missing_fields}, status=400)

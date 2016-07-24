@@ -162,14 +162,26 @@ class MisterCluster:
         implementations = ApplianceImplementationsApi().appliances_impl_get()
         clusters = Cluster.objects.all()
 
-        (appliance_impl, common_appliance_impl) = SchedulingPolicy().choose_appliance_implementation(
-            appliance,
-            implementations,
-            sites,
-            clusters
-        )
-        appliance_impl_name = appliance_impl.name
-        common_appliance_impl_name = common_appliance_impl.name
+        appliance_impl_name = cluster_db_object.appliance_impl
+        common_appliance_impl_name = cluster_db_object.common_appliance_impl
+
+        if appliance_impl_name == "" or common_appliance_impl_name == "":
+            (appliance_impl, common_appliance_impl) = SchedulingPolicy().choose_appliance_implementation(
+                appliance,
+                implementations,
+                sites,
+                clusters
+            )
+            appliance_impl_name = appliance_impl.name
+            common_appliance_impl_name = common_appliance_impl.name
+            cluster_db_object.appliance_impl = appliance_impl_name
+            cluster_db_object.common_appliance_impl = common_appliance_impl_name
+            cluster_db_object.save()
+        else:
+            appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(appliance_impl_name)
+            common_appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(common_appliance_impl_name)
+            # appliance_impl = AppliancesApi().appliances_name_get(appliance_impl_name)
+            # common_appliance_impl = AppliancesApi().appliances_name_get(common_appliance_impl_name)
 
         if appliance_impl is None or common_appliance_impl is None:
             raise Exception("Could not find an implementation of the given appliance :(")
@@ -263,6 +275,7 @@ class MisterCluster:
         time.sleep(8)  # TODO: Replace this by a loop on Paramiko in update_hosts_file
         instances_ids = map(lambda x: x.instance_id, cluster_db_object.host_set.all())
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
+        variables["nodes"] = instances
 
         logging.info("Updating hosts file of nodes %s" % (instances_ids))
         update_hosts_file(instances, user, key_paths["private"], common_appliance_impl_name, tmp_folder=tmp_folder)
@@ -342,5 +355,6 @@ class MisterCluster:
             time.sleep(5)
             ssh_master.exec_command("bash update_master_node.sh")
             logging.info("Successfully updated the master node!")
+
 
         return True

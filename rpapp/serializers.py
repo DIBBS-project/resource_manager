@@ -41,6 +41,8 @@ class ClusterSerializer(serializers.Serializer):
     # private_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
     public_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
     # has_password = serializers.BooleanField(default=False)
+    appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
+    common_appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
 
     # Relationships
     user_id = serializers.IntegerField()

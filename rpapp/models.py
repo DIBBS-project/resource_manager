@@ -34,6 +34,8 @@ class Cluster(models.Model):
     # Relationships
     user = models.ForeignKey("User", on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
+    appliance_impl = models.CharField(max_length=100, blank=True)
+    common_appliance_impl = models.CharField(max_length=100, blank=True)
 
     def get_master_node(self):
         candidates = Host.objects.filter(cluster_id=self.id).filter(is_master=True)
