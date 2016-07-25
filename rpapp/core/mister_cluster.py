@@ -309,7 +309,6 @@ class MisterCluster:
         # Configure Node
         logging.info("Preparing the new node")
         prepare_node_path = "%s/prepare_node" % (tmp_folder)
-        #generate_template_file("%s/prepare_node.jinja2" % cluster_type, prepare_node_path, variables)
         generate_script_from_appliance_registry(appliance_impl_name, "prepare_node", prepare_node_path, variables)
 
         sftp = ssh.open_sftp()
@@ -323,7 +322,6 @@ class MisterCluster:
         # Configure cluster node
         logging.info("Configuring node to join the cluster")
         configure_node_path = "%s/configure_node" % tmp_folder
-        # generate_template_file("%s/configure_node.jinja2" % cluster_type, configure_node_path, variables)
         generate_script_from_appliance_registry(appliance_impl_name, "configure_node", configure_node_path, variables)
 
         sftp = ssh.open_sftp()
@@ -346,7 +344,6 @@ class MisterCluster:
             # Send files to the master node
             logging.info("Updating master node to take into account the new node")
             update_master_node_path = "%s/update_master_node" % (tmp_folder)
-            # generate_template_file("%s/update_master_node.jinja2" % cluster_type, update_master_node_path, variables)
             generate_script_from_appliance_registry(appliance_impl_name, "update_master_node",
                                                     update_master_node_path, variables)
 
@@ -355,6 +352,5 @@ class MisterCluster:
             time.sleep(5)
             ssh_master.exec_command("bash update_master_node.sh")
             logging.info("Successfully updated the master node!")
-
 
         return True
