@@ -307,11 +307,19 @@ class MisterCluster:
         time.sleep(10)
 
         # Try to connect to the instance
-        logging.info("Trying to establish a ssh connection to the new instance")
-        ssh = paramiko.SSHClient()
-        ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        ssh.connect(floating_ip, username=user, key_filename=key_paths["private"])
-        logging.info("Ssh connection established!")
+        ok=False
+        i = 0
+        while (not ok) and i < 10:
+            try:
+                logging.info("Trying to establish a ssh connection to the new instance %s" % (i))
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(floating_ip, username=user, key_filename=key_paths["private"])
+                logging.info("Ssh connection established!")
+                ok=True
+            except:
+                time.sleep(10)
+                i += 1
 
         execute_ssh_cmd(ssh, "touch success")
 
