@@ -304,7 +304,7 @@ class MisterCluster:
             variables["master_name"] = instance.name
 
         # Giving time to the instance to fully startup
-        time.sleep(2)
+        time.sleep(10)
 
         # Try to connect to the instance
         logging.info("Trying to establish a ssh connection to the new instance")
