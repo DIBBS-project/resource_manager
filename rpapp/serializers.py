@@ -38,6 +38,9 @@ class ClusterSerializer(serializers.Serializer):
     id = serializers.IntegerField()
     name = serializers.CharField(max_length=100, allow_blank=False, default='')
     uuid = serializers.CharField(max_length=100, allow_blank=True, default='')
+
+    status = serializers.CharField(max_length=100, allow_blank=True, default='')
+
     # private_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
     public_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
     # has_password = serializers.BooleanField(default=False)

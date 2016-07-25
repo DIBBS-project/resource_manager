@@ -156,6 +156,8 @@ class MisterCluster:
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster
+        cluster_db_object.status = "Adding a node"
+        cluster_db_object.save()
         appliance = AppliancesApi().appliances_name_get(cluster_db_object.appliance)
 
         sites = SitesApi().sites_get()
@@ -184,6 +186,8 @@ class MisterCluster:
             # common_appliance_impl = AppliancesApi().appliances_name_get(common_appliance_impl_name)
 
         if appliance_impl is None or common_appliance_impl is None:
+            cluster_db_object.status = "Error"
+            cluster_db_object.save()
             raise Exception("Could not find an implementation of the given appliance :(")
 
         targetted_site = SitesApi().sites_name_get(appliance_impl.site)
@@ -191,6 +195,11 @@ class MisterCluster:
         nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
 
         is_master = cluster_db_object.get_master_node() is None
+        if is_master:
+            cluster_db_object.status = "Adding master node"
+        else:
+            cluster_db_object.status = "Adding a slave node"
+        cluster_db_object.save()
 
         logging.info("Is this new node a master node? %s" % (is_master))
 
@@ -353,4 +362,6 @@ class MisterCluster:
             ssh_master.exec_command("bash update_master_node.sh")
             logging.info("Successfully updated the master node!")
 
+        cluster_db_object.status = "IDLE"
+        cluster_db_object.save()
         return True

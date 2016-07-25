@@ -2,7 +2,7 @@ swagger: '2.0'
 info:
   title: Resource provisioner API
   description: Provision Cloud Computing resources via API.
-  version: "0.1.5"
+  version: "0.1.6"
 # the domain of the service
 host: 127.0.0.1:8002
 # array of all schemes that your API supports
@@ -317,6 +317,9 @@ definitions:
       uuid:
         type: string
         description: Internal UUID given to the cluster
+      status:
+        type: string
+        description: Status of the cluster
       public_key:
         type: string
         description: Public key used to identify nodes of the cluster

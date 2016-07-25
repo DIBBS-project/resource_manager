@@ -31,6 +31,8 @@ class Cluster(models.Model):
     private_key = models.TextField(max_length=1000, blank=True, default='')
     public_key = models.TextField(max_length=1000, blank=True, default='')
 
+    status = models.CharField(max_length=100, blank=True, default='IDLE')
+
     # Relationships
     user = models.ForeignKey("User", on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
