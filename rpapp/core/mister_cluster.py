@@ -86,7 +86,7 @@ class MisterCluster:
             raise Exception("could not find a network associated to the newly created instance.")
 
         # Provide a floating IP to the newly created instance
-        logging.info("I will try to give a FloatingIp to %s" % (instance_name))
+        logging.info("I will try to give a FloatingIp to %s" % (instance_name,))
         get_an_available_floating_ip = lambda: nova_client.floating_ips.findall(instance_id=None)
         if get_an_available_floating_ip is None:
             logging.info("a new floating IP will be created for instance (%s)" % (instance.id))
@@ -103,19 +103,19 @@ class MisterCluster:
         # Reload Instance
         instance = nova_client.servers.find(id=instance.id)
 
-        logging.info("Instance has been provisionned with id=%s" % (instance.id))
+        logging.info("Instance has been provisioned with id=%s" % (instance.id,))
 
-        return (instance, host)
+        return instance, host
 
-    def get_novaclient_associated_to_site(self, user, site):
-
+    @staticmethod
+    def get_novaclient_from_credentials(full_credentials):
         import novaclient
-        os_auth_url = site.contact_url
-        username = user.username
-        from rpapp.core.authenticator import Authenticator
-        authenticator = Authenticator()
-        password = authenticator.decrypt_password("tmp/%s" % (user.username))
-        project = user.project
+        assert full_credentials[u'site'].type == 'openstack'
+        os_auth_url = full_credentials[u'site'].contact_url
+        credentials = full_credentials[u'credentials']
+        username = credentials[u'username']
+        password = credentials[u'password']
+        project = credentials[u'project']
         novaclient = novaclient.v2.client.Client(username, password, project, os_auth_url)
         return novaclient
 
@@ -168,6 +168,7 @@ class MisterCluster:
         common_appliance_impl_name = cluster_db_object.common_appliance_impl
 
         if appliance_impl_name == "" or common_appliance_impl_name == "":
+            # TODO: Change the signature of this function, no need for all this information as well as common_a_impl
             (appliance_impl, common_appliance_impl) = SchedulingPolicy().choose_appliance_implementation(
                 appliance,
                 implementations,
@@ -182,17 +183,14 @@ class MisterCluster:
         else:
             appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(appliance_impl_name)
             common_appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(common_appliance_impl_name)
-            # appliance_impl = AppliancesApi().appliances_name_get(appliance_impl_name)
-            # common_appliance_impl = AppliancesApi().appliances_name_get(common_appliance_impl_name)
 
         if appliance_impl is None or common_appliance_impl is None:
             cluster_db_object.status = "Error"
             cluster_db_object.save()
             raise Exception("Could not find an implementation of the given appliance :(")
 
-        targetted_site = SitesApi().sites_name_get(appliance_impl.site)
-        targetted_user = cluster_db_object.user
-        nova_client = self.get_novaclient_associated_to_site(targetted_user, targetted_site)
+        full_credentials = cluster_db_object.get_full_credentials()
+        nova_client = self.get_novaclient_from_credentials(full_credentials)
 
         is_master = cluster_db_object.get_master_node() is None
         if is_master:

@@ -2,10 +2,12 @@
 # -*- coding: utf-8 -*-
 
 from django.shortcuts import render
+import django.contrib.auth
 
-from rpapp.models import User, Cluster, Host, Token
-from rpapp.models import User as OurUserClass
-from rpapp.serializers import UserSerializer, ClusterSerializer, HostSerializer
+from rpapp.models import Cluster, Host, Profile, Credential
+from rpapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
+
+from rest_framework import viewsets, permissions, status
 
 from django.views.decorators.csrf import csrf_exempt
 
@@ -14,13 +16,6 @@ from django.http import HttpResponse
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from lib.common import *
-
-
-from django.contrib.auth.models import User
-from rest_framework import authentication
-from rest_framework import exceptions
-from rest_framework.decorators import authentication_classes
 
 from lib.views_decorators import *
 
@@ -42,132 +37,92 @@ def index(request):
 ##############################
 
 
-@api_view(['POST'])
-@csrf_exempt
-def register_new_user(request):
-    username = request.POST.get("username")
-    password = request.POST.get("password")
-    logger.debug("will create user (%s, %s)" % (username, password))
+class UserViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+    queryset = django.contrib.auth.get_user_model().objects.all()
+    serializer_class = UserSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
-    from django.contrib.auth.models import User
-    try:
-        user = User.objects.create_user(username=username, password=password)
-        user.save()
-    except:
-        return Response({"status": "failed"})
+    def create(self, request, *args, **kwargs):
+        data2 = {}
+        for key in request.data:
+            data2[key] = request.data[key]
+        data2[u'credentials'] = []
+        data2[u'clusters'] = []
+        serializer = self.get_serializer(data=data2)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
-    return Response({"status": "ok"})
+
+class CredentialViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+
+    queryset = Credential.objects.all()
+    serializer_class = CredentialSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def create(self, request, *args, **kwargs):
+        from ar_client.apis.sites_api import SitesApi
+        import crypto
+
+        data2 = {}
+        for key in request.data:
+            data2[key] = request.data[key]
+        data2[u'user'] = request.user.id
+
+        # Retrieve site information with the Appliance Registry API (check for existence)
+        SitesApi().sites_name_get(name=data2[u'site_name'])
+        # Use the private key de temporarily decrypt and check that it gives JSON
+        decrypted_credentials = crypto.decrypt_credentials(data2[u'credentials'], user_id=request.user.id)
+        # TODO (someday): Check that the credentials are correct (or at least that all the information is provided)
+
+        serializer = self.get_serializer(data=data2)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+    queryset = Profile.objects.all()
+    serializer_class = ProfileSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
 
 @api_view(['GET'])
-@expect_username
-@expect_password
-@user_authentication
-@csrf_exempt
-def generate_new_token(request):
-    import uuid
-    from django.contrib.auth.models import User
-
+def rsa_public_key(request, user_id):
+    from Crypto.PublicKey import RSA
     try:
-        user = User.objects.filter(username=request.username).first()
-
-        token = Token()
-        token.token = uuid.uuid4()
-        token.username = request.username
-        token.user_id = user.id
-        token.save()
-
-        return Response({"status": "ok", "token": token.token})
+        profile = Profile.objects.get(user=user_id)
+        key = RSA.importKey(profile.rsa_key)
+        public_key = key.publickey()
     except:
-        return Response({"status": "failed"})
+        return Response({"error": "Cannot find user %s" % user_id}, status=404)
+    return Response({"public_key": public_key.exportKey()})
 
 
-# Methods related to UserProfile
-@api_view(['GET', 'POST'])
-@csrf_exempt
-def user_list(request):
-    """
-    List all users, or create a new user.
-    """
-    if request.method == 'GET':
-        users = OurUserClass.objects.all()
-        serializer = UserSerializer(users, many=True)
-        for result in serializer.data:
-            result["password"] = '********'
-        return Response(serializer.data)
-    # elif request.method == 'POST':
-    #     data = JSONParser().parse(request)
-    #     serializer = UserSerializer(data=data)
-    #     if serializer.is_valid():
-    #         serializer.save()
-    #         return Response(serializer.data, status=201)
-    #     return Response(serializer.errors, status=400)
-
-    elif request.method == 'POST':
-        # data = JSONParser().parse(request)
-        data = request.data
-        required_fields = ["username", "password", "project"]
-        missing_fields = []
-
-        for required_field in required_fields:
-            if required_field not in data:
-                missing_fields += [required_field]
-
-        if len(missing_fields) == 0:
-            from rpapp import models
-            user = OurUserClass()
-            for field in data:
-                setattr(user, field, data[field])
-            user.save()
-            generate_user_keypairs(user)
-            return Response({"user_id": user.id, "api_token": user.api_token}, status=201)
-
-        return Response({"missing_fields": missing_fields}, status=400)
-
-
-@api_view(['GET', 'PUT', 'DELETE', 'PATCH'])
-@csrf_exempt
-def user_detail(request, pk):
-    """
-    Retrieve, update or delete an user.
-    """
+@api_view(['GET'])
+def credentials_for_user(request, user_id):
     try:
-        user = OurUserClass.objects.get(pk=pk)
-    except User.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == 'GET':
-        user.password = "*" * len(user.password)
-        serializer = UserSerializer(user)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = UserSerializer(user, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            user.password = "*" * len(user.password)
-            serializer = UserSerializer(user, data=data)
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    elif request.method == 'DELETE':
-        user.delete()
-        return HttpResponse(status=204)
-
-    elif request.method == 'PATCH':
-        # A User is uploading an encrypted password file
-
-        # Read content of the file
-
-        user = OurUserClass.objects.filter(id=1).first()
-        file_content = request.data['data'].read()
-        tmp_folder = "tmp/%s" % user.username
-        create_file("%s/password.txt" % tmp_folder, file_content)
-        user.has_password = True
-        user.save()
-
-        return Response({"status": "ok"}, status=201)
+        creds = Credential.objects.filter(user_id=user_id)
+        response = []
+        for cred in creds:
+            response.append(CredentialSerializer(cred))
+    except:
+        return Response({"error": "Cannot find user %s" % user_id}, status=404)
+    return Response(response)
 
 
 # Methods related to Cluster
@@ -184,23 +139,29 @@ def cluster_list(request):
 
     elif request.method == 'POST':
         from rpapp.core.mister_cluster import MisterCluster
-        data = JSONParser().parse(request)
+
+        data2 = {}
+        for key in request.data:
+            data2[key] = request.data[key]
+        data2['user_id'] = request.user.id
+
         required_fields = ["appliance", "user_id", "name"]
         missing_fields = []
 
         for required_field in required_fields:
-            if required_field not in data:
+            if required_field not in data2:
                 missing_fields += [required_field]
 
         if len(missing_fields) == 0:
             from rpapp import models
             cluster = models.Cluster()
-            for field in data:
-                setattr(cluster, field, data[field])
+            for field in data2:
+                setattr(cluster, field, data2[field])
             cluster.save()
             mister_cluster = MisterCluster()
             mister_cluster.generate_clusters_keypairs(cluster)
-            return Response({"cluster_id": cluster.id}, status=201)
+            serializer = ClusterSerializer(cluster)
+            return Response(serializer.data, status=201)
 
         return Response({"missing_fields": missing_fields}, status=400)
 
@@ -235,7 +196,6 @@ def cluster_detail(request, pk):
 
 # Methods related to Host
 @api_view(['GET', 'POST', 'PATCH'])
-@expect_apitoken
 @csrf_exempt
 def host_list(request):
     """
@@ -300,9 +260,9 @@ def host_detail(request, pk):
 
 
 def get_certificate(request, pk):
-    user = OurUserClass.objects.filter(id=pk)
+    user = django.contrib.auth.get_user_model().objects.filter(id=pk)
     if user:
-        tmp_folder = "tmp/%s" % (user[0].username)
+        tmp_folder = "tmp/%s" % user[0].username
         from rpapp.core.authenticator import Authenticator
         authenticator = Authenticator()
         certificate = authenticator.generate_public_certification(tmp_folder)
