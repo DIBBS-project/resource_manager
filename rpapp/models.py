@@ -1,4 +1,13 @@
 from django.db import models
+from django.contrib.auth.models import User
+from Crypto.PublicKey import RSA
+
+
+from django.conf import settings
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.contrib import auth
+from rest_framework.authtoken.models import Token
 import uuid
 
 # Create your models here.
@@ -8,21 +17,16 @@ def generate_uuid():
     return uuid.uuid4()
 
 
-class User(models.Model):
-    username = models.CharField(max_length=100, blank=False, default='')
-    password = models.CharField(max_length=100, blank=False, default='')
-    project = models.CharField(max_length=100, blank=False, default='')
-    # Authentication
-    api_token = models.TextField(max_length=1000, blank=True, default=generate_uuid)
-    security_certificate = models.TextField(max_length=1000, blank=True, default='')
-    has_password = models.BooleanField(default=False)
-    USERNAME_FIELD = 'identifier'
+class Credential(models.Model):
+    site_name = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='credentials', on_delete=models.CASCADE)
+    credentials = models.TextField()
 
 
-class Token(models.Model):
-    value = models.TextField(max_length=1000, blank=True, default='')
-    # Relationships
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True,
+                                related_name='profile')
+    rsa_key = models.TextField(max_length=1024, blank=True, default='')
 
 
 class Cluster(models.Model):
@@ -34,7 +38,7 @@ class Cluster(models.Model):
     status = models.CharField(max_length=100, blank=True, default='IDLE')
 
     # Relationships
-    user = models.ForeignKey("User", on_delete=models.CASCADE)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
     appliance_impl = models.CharField(max_length=100, blank=True)
     common_appliance_impl = models.CharField(max_length=100, blank=True)
@@ -43,8 +47,24 @@ class Cluster(models.Model):
         candidates = Host.objects.filter(cluster_id=self.id).filter(is_master=True)
         return candidates[0] if len(candidates) > 0 else None
 
-    def get_appliance_name(self):
-        return str(self.appliance)
+    def get_full_credentials(self):
+        from ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
+        from ar_client.apis.sites_api import SitesApi
+        import crypto
+
+        appl_impl = ApplianceImplementationsApi().appliances_impl_name_get(name=str(self.appliance_impl))
+
+        user = auth.get_user_model().objects.get(id=self.user_id)
+        full_credentials = None
+        for creds in user.credentials.all():
+            if creds.site_name == appl_impl.site:
+                full_credentials = {
+                    "site": SitesApi().sites_name_get(name=creds.site_name),
+                    "user": self.user,
+                    "credentials": crypto.decrypt_credentials(creds.credentials, user_id=self.user_id)
+                }
+                break
+        return full_credentials
 
     # def user(self):
 
@@ -53,8 +73,21 @@ class Host(models.Model):
     name = models.CharField(max_length=100, blank=True, default='')
     is_master = models.BooleanField(default=False)
     instance_id = models.CharField(max_length=100, blank=True, default='')
-    keypair = models.TextField(max_length=1000, blank=True, default='MySshKey')
     instance_ip = models.CharField(max_length=100, blank=True, default='')
 
     # Relationships
-    cluster = models.ForeignKey("Cluster", on_delete=models.CASCADE)
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
+
+
+# Add a token upon user creation
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_auth_token(sender, instance=None, created=False, **kwargs):
+    if created:
+        Token.objects.create(user=instance)
+
+
+# Add a profile upon user creation
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_profile(sender, instance=None, created=False, **kwargs):
+    if created:
+        Profile.objects.create(user=instance, rsa_key=RSA.generate(1024).exportKey())

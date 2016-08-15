@@ -1,37 +1,38 @@
 from rest_framework import serializers
-from models import User, Cluster, Host
+from models import Credential, Profile, Cluster, Host
+import django.contrib.auth
 
 
-class UserSerializer(serializers.Serializer):
-    id = serializers.IntegerField()
-    username = serializers.CharField(max_length=100, allow_blank=False, default='')
-    # password = serializers.CharField(max_length=100, allow_blank=False, default='')
-    project = serializers.CharField(max_length=100, allow_blank=False, default='')
-    api_token = serializers.CharField(max_length=100, allow_blank=False, default='')
-    security_certificate = serializers.CharField(max_length=100, allow_blank=False, default='')
+class UserSerializer(serializers.ModelSerializer):
+    credentials = serializers.PrimaryKeyRelatedField(many=True, queryset=Credential.objects.all())
+    clusters = serializers.PrimaryKeyRelatedField(many=True, queryset=Cluster.objects.all())
 
-    cluster_ids = serializers.SerializerMethodField('user_clusters')
+    class Meta:
+        model = django.contrib.auth.get_user_model()
+        fields = ('id', 'username', 'first_name', 'last_name', 'email',
+                  'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
+                  'date_joined',
+                  'password',)
+        read_only_fields = ('id', 'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
+                            'date_joined',)
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
 
-    def user_clusters(self, user):
-        return map(lambda x: x.id, Cluster.objects.filter(user_id=user.id))
 
-    def create(self, validated_data):
-        """
-        Create and return a new `User` instance, given the validated data.
-        """
-        return UserSerializer.objects.create(**validated_data)
+class CredentialSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Credential
+        fields = ('site_name', 'user', 'credentials',)
+        extra_kwargs = {
+            'credentials': {'write_only': True}
+        }
 
-    def update(self, instance, validated_data):
-        """
-        Update and return an existing `User` instance, given the validated data.
-        """
-        instance.username = validated_data.get('username', instance.username)
-        # instance.password = validated_data.get('password', instance.password)
-        instance.project = validated_data.get('project', instance.project)
 
-        if instance.password != "" and instance.password != "" and instance.project != "":
-            instance.save()
-        return instance
+class ProfileSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Profile
+        fields = ('user', 'rsa_key',)
 
 
 class ClusterSerializer(serializers.Serializer):
@@ -39,23 +40,21 @@ class ClusterSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, allow_blank=False, default='')
     uuid = serializers.CharField(max_length=100, allow_blank=True, default='')
 
-    status = serializers.CharField(max_length=100, allow_blank=True, default='')
-
     # private_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
     public_key = serializers.CharField(max_length=1000, allow_blank=True, default='')
-    # has_password = serializers.BooleanField(default=False)
-    appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
-    common_appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
+    status = serializers.CharField(max_length=100, allow_blank=True, default='')
+
+    # Custom fields
+    host_ids = serializers.SerializerMethodField('cluster_hosts')
+    hosts_ips = serializers.SerializerMethodField('cluster_hosts_ips')
+    master_node_id = serializers.SerializerMethodField('cluster_master_node_id')
+    master_node_ip = serializers.SerializerMethodField('cluster_master_node_ip')
 
     # Relationships
     user_id = serializers.IntegerField()
     appliance = serializers.CharField(max_length=100)
-
-    # Custom fields
-    host_ids = serializers.SerializerMethodField('cluster_hosts')
-    master_node_id = serializers.SerializerMethodField('cluster_master_node_id')
-    master_node_ip = serializers.SerializerMethodField('cluster_master_node_ip')
-    hosts_ips = serializers.SerializerMethodField('cluster_hosts_ips')
+    appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
+    common_appliance_impl = serializers.CharField(max_length=100, allow_blank=True, default='')
 
     def cluster_hosts(self, cluster):
         return map(lambda x: x.id, Host.objects.filter(cluster_id=cluster.id))
@@ -71,9 +70,6 @@ class ClusterSerializer(serializers.Serializer):
     def cluster_hosts_ips(self, cluster):
         candidates = map(lambda x: x.instance_ip, Host.objects.filter(cluster_id=cluster.id))
         return candidates
-
-    def cluster_appliance_name(self, cluster):
-        return cluster.get_appliance_name()
 
     def create(self, validated_data):
         """
@@ -111,7 +107,6 @@ class HostSerializer(serializers.Serializer):
     name = serializers.CharField(max_length=100, allow_blank=True, default='')
     is_master = serializers.BooleanField(default=False)
     instance_id = serializers.CharField(max_length=100, allow_blank=True, default='')
-    keypair = serializers.CharField(max_length=100, allow_blank=True, default='')
     instance_ip = serializers.CharField(max_length=100, allow_blank=True, default='')
 
     # Relationships

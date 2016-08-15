@@ -108,11 +108,11 @@ def user_authentication(view_func):
             raise exceptions.AuthenticationFailed('need a username and a password :(')
         username = request.username
         password = request.password
-        from django.contrib.auth.models import User
-        users = User.objects.filter(username=username).all()
+        import django.contrib.auth
+        users = django.contrib.auth.get_user_model().objects.filter(username=username).all()
         if len(users) == 0:
             raise exceptions.AuthenticationFailed('user not valid :(')
-        user = User.objects.filter(username=username).first()
+        user = django.contrib.auth.get_user_model().objects.filter(username=username).first()
         if not user.check_password(password):
             raise exceptions.AuthenticationFailed('user not valid :(')
         return view_func(*args, **kwargs)
