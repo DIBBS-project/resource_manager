@@ -16,9 +16,12 @@ def decrypt_credentials(encrypted_credentials, user_id):
 
     to_decrypt = b64decode(encrypted_credentials)
     decrypted_credentials = key.decrypt(to_decrypt)
+
     # Temporary fix
     # TODO: Understand why there are additional characters at the beginning and fix this hack
     import string
+    pos = string.rfind(decrypted_credentials, '{')
+    print(pos)
     decrypted_credentials = decrypted_credentials[string.rfind(decrypted_credentials, '{'):]
     decrypted_credentials = json.loads(decrypted_credentials)
     return decrypted_credentials

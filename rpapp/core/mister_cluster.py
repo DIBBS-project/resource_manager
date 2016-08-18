@@ -187,9 +187,12 @@ class MisterCluster:
         if appliance_impl is None or common_appliance_impl is None:
             cluster_db_object.status = "Error"
             cluster_db_object.save()
-            raise Exception("Could not find an implementation of the given appliance :(")
+            raise Exception("Could not find an implementation of the given appliance/")
 
         full_credentials = cluster_db_object.get_full_credentials()
+        if full_credentials is None:
+            # TODO: Fail more gracefully
+            raise Exception("No credentials for the selected site!")
         nova_client = self.get_novaclient_from_credentials(full_credentials)
 
         is_master = cluster_db_object.get_master_node() is None
@@ -199,10 +202,10 @@ class MisterCluster:
             cluster_db_object.status = "Adding a slave node"
         cluster_db_object.save()
 
-        logging.info("Is this new node a master node? %s" % (is_master))
+        logging.info("Is this new node a master node? %s" % (is_master,))
 
         request_uuid = cluster_db_object.uuid
-        tmp_folder = "tmp/%s" % (request_uuid)
+        tmp_folder = "tmp/%s" % (request_uuid,)
         # user = host.cluster.user.username
         user = config.configuration["user"]
 
