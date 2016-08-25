@@ -68,7 +68,7 @@ class MisterCluster:
         logging.info("Waiting for the instance %s to be active" % (instance_name))
         while instance.status != "ACTIVE":
             instance = nova_client.servers.find(id=instance.id)
-            time.sleep(10)
+            time.sleep(1)
 
         logging.info("The instance %s is now active!" % (instance_name))
 
@@ -287,14 +287,28 @@ class MisterCluster:
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
         variables["nodes"] = instances
 
-        logging.info("Updating hosts file of nodes %s" % (instances_ids))
-        update_hosts_file(instances, user, key_paths["private"], common_appliance_impl_name, tmp_folder=tmp_folder)
-        logging.info("Hosts file of nodes %s have been updated" % (instances_ids))
-
         floating_ip = detect_floating_ip_from_instance(instance)
         host.instance_ip = floating_ip
         host.save()
         logging.info("The new instance has now a floating IP (%s)" % (floating_ip))
+
+        # Try to connect via SSH to the instance
+        ok = False
+        i = 0
+        while (not ok) and i < 30:
+            try:
+                logging.info("Trying to establish a ssh connection to the new instance %s" % (i))
+                ssh = paramiko.SSHClient()
+                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                ssh.connect(floating_ip, username=user, key_filename=key_paths["private"])
+                logging.info("Ssh connection established!")
+                ok = True
+            except:
+                time.sleep(3)
+                i += 1
+        logging.info("Updating hosts file of nodes %s" % (instances_ids))
+        update_hosts_file(instances, user, key_paths["private"], common_appliance_impl_name, tmp_folder=tmp_folder)
+        logging.info("Hosts file of nodes %s have been updated" % (instances_ids))
 
         variables["node_ip"] = floating_ip
         variables["node_name"] = instance.name
@@ -305,22 +319,8 @@ class MisterCluster:
             variables["master_name"] = instance.name
 
         # Giving time to the instance to fully startup
-        time.sleep(10)
+        # time.sleep(10)
 
-        # Try to connect to the instance
-        ok=False
-        i = 0
-        while (not ok) and i < 10:
-            try:
-                logging.info("Trying to establish a ssh connection to the new instance %s" % (i))
-                ssh = paramiko.SSHClient()
-                ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-                ssh.connect(floating_ip, username=user, key_filename=key_paths["private"])
-                logging.info("Ssh connection established!")
-                ok=True
-            except:
-                time.sleep(10)
-                i += 1
 
         execute_ssh_cmd(ssh, "touch success")
 
@@ -331,7 +331,7 @@ class MisterCluster:
 
         sftp = ssh.open_sftp()
         sftp.put(prepare_node_path, 'prepare_node.sh')
-        time.sleep(5)
+        # time.sleep(1)
 
         execute_ssh_cmd(ssh, "bash prepare_node.sh")
 
@@ -344,13 +344,13 @@ class MisterCluster:
 
         sftp = ssh.open_sftp()
         sftp.put(configure_node_path, 'configure_node.sh')
-        time.sleep(5)
+        # time.sleep(5)
         execute_ssh_cmd(ssh, "bash configure_node.sh")
 
         logging.info("The node joined the cluster!")
 
         if not is_master:
-            time.sleep(30)
+            # time.sleep(30)
             # Updating master_node
             logging.info("Connecting to the master node")
             master_node_floating_ip = detect_floating_ip_from_instance(master)
@@ -367,7 +367,7 @@ class MisterCluster:
 
             sftp_master = ssh_master.open_sftp()
             sftp_master.put(update_master_node_path, 'update_master_node.sh')
-            time.sleep(5)
+            # time.sleep(5)
             ssh_master.exec_command("bash update_master_node.sh")
             logging.info("Successfully updated the master node!")
 

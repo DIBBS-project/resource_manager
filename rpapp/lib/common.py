@@ -101,7 +101,7 @@ def update_hosts_file(instances, username, key_filename, common_appliance_impl_n
 
         sftp_master = ssh_master.open_sftp()
         sftp_master.put(update_hosts_file_path, 'update_hosts_file.sh')
-        time.sleep(5)
+        # time.sleep(5)
         ssh_master.exec_command("bash update_hosts_file.sh")
 
 
