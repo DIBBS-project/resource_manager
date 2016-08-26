@@ -282,7 +282,7 @@ class MisterCluster:
             host.save()
             logging.info("A master node of cluster <%s> has been elected" % (host.cluster_id))
 
-        time.sleep(8)  # TODO: Replace this by a loop on Paramiko in update_hosts_file
+        #time.sleep(8)  # TODO: Replace this by a loop on Paramiko in update_hosts_file
         instances_ids = map(lambda x: x.instance_id, cluster_db_object.host_set.all())
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
         variables["nodes"] = instances
