@@ -160,6 +160,34 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /clusters/{id}/new_account:
+    post:
+      summary: Create a new user account on the specified cluster.
+      description: |
+        Create a new user account on the specified cluster.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Cluster definitions
+      responses:
+        201:
+          description: The new account created on the cluster matching the given Id
+          schema:
+            $ref: '#/definitions/TemporaryAccountCredential'
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /hosts/:
     get:
       summary: Get the list of all the Host definitions registered.
@@ -185,7 +213,7 @@ paths:
       security:
         - basic: []
         - api_key: []
-      
+
       parameters:
         - name: data
           in: body
@@ -231,8 +259,8 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-    
-            
+
+
   /users/:
     get:
       summary: Get the list of all the users registered.
@@ -868,6 +896,17 @@ definitions:
       credentials:
         type: string
         description: Encrypted credentials (JSON format encrypted)
+
+  TemporaryAccountCredential:
+    type: object
+    properties:
+      username:
+        type: string
+        description: Name of the temporary user
+      password:
+        type: string
+        description: Password of the temporary user
+
 
   Error:
     type: object

@@ -19,15 +19,15 @@ class MisterCluster:
 
     # I have re-purposed code from: https://github.com/ChameleonCloud/testing/blob/master/tests/test_chi.py
     def provision_new_instance(self, nova_client, host, image_name, user_data=None):
-        logging.info("Preparing the network for a new nova instance")
-        # TODO: network_label is kind of hardcoded: it should be more generic!
-        network_label = config.configuration["network_label"]
-        network = nova_client.networks.find(label=network_label)
-        if network is None:
-            logging.error("Could not found the requested network (name=%s)" % (network_label))
-            raise "Could not found the requested network (name=%s)" % (network_label)
-        nics = [{'net-id': network.id}]
-        logging.info("Successfully prepared the network")
+        # logging.info("Preparing the network for a new nova instance")
+        # # TODO: network_label is kind of hardcoded: it should be more generic!
+        # network_label = config.configuration["network_label"]
+        # network = nova_client.networks.find(label=network_label)
+        # if network is None:
+        #     logging.error("Could not found the requested network (name=%s)" % (network_label))
+        #     raise "Could not found the requested network (name=%s)" % (network_label)
+        # nics = [{'net-id': network.id}]
+        # logging.info("Successfully prepared the network")
 
         # TODO: image_name is kind of hardcoded: it should be more generic!
         logging.info("Looking for the image")

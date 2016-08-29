@@ -19,6 +19,7 @@ urlpatterns = [
     # Clusters
     url(r'^clusters/?$', views.cluster_list),
     url(r'^clusters/(?P<pk>[0-9]+)/$', views.cluster_detail),
+    url(r'^clusters/(?P<pk>[0-9]+)/new_account', views.new_account),
 
     # RSA
     url(r'^rsa_public_key/(?P<user_id>[0-9]+)/$', views.rsa_public_key),

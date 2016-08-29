@@ -17,6 +17,8 @@ from django.http import HttpResponse
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 
+import base64
+
 from lib.views_decorators import *
 
 # import the logging library
@@ -30,6 +32,14 @@ logger = logging.getLogger(__name__)
 def index(request):
     clusters = Cluster.objects.all()
     return render(request, "index.html", {"clusters": clusters})
+
+
+def configure_basic_authentication(swagger_client, username, password):
+    authentication_string = "%s:%s" % (username, password)
+    base64_authentication_string = base64.b64encode(bytes(authentication_string))
+    header_key = "Authorization"
+    header_value = "Basic %s" % (base64_authentication_string, )
+    swagger_client.api_client.default_headers[header_key] = header_value
 
 
 ##############################
@@ -164,6 +174,29 @@ def cluster_list(request):
             return Response(serializer.data, status=201)
 
         return Response({"missing_fields": missing_fields}, status=400)
+
+
+# Methods related to Cluster
+@api_view(['POST'])
+@csrf_exempt
+def new_account(request, pk):
+    """
+    Create a new temporary user account on an existing cluster.
+    """
+    from rpapp.rpa_client.apis import ActionsApi
+
+    clusters = Cluster.objects.filter(id=pk).all()
+    if len(clusters) == 0:
+        return Response({}, status=status.HTTP_404_NOT_FOUND)
+    cluster = clusters[0]
+
+    actions_api = ActionsApi()
+    actions_api.api_client.host = "http://%s:8012" % (cluster.master_node_ip,)
+    configure_basic_authentication(actions_api, "admin", "pass")
+
+    result = actions_api.new_account_post()
+
+    return Response(result, status=201)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
