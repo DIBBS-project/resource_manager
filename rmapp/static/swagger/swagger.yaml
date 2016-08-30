@@ -1,8 +1,8 @@
 swagger: '2.0'
 info:
-  title: Resource provisioner API
-  description: Provision Cloud Computing resources via API.
-  version: "0.1.11"
+  title: Resource manager API
+  description: Manage Cloud Computing resources via API.
+  version: "0.1.12"
 # the domain of the service
 host: 127.0.0.1:8002
 # array of all schemes that your API supports
@@ -10,7 +10,7 @@ schemes:
 # TODO: Change to HTTPS when not on localhost!
   - http
 # will be prefixed to all paths
-#basePath: /rmpapp
+#basePath: /rpapp
 consumes:
   - application/json
 produces:
@@ -48,7 +48,7 @@ paths:
       security:
         - basic: []
         - api_key: []
-      
+
       parameters:
         - name: data
           in: body
@@ -102,7 +102,7 @@ paths:
       security:
         - basic: []
         - api_key: []
-      
+
       parameters:
         - name: id
           in: path
@@ -131,7 +131,7 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
-    
+
     delete:
       summary: Delete an already existing cluster definition.
       description: |
