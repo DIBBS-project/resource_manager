@@ -190,13 +190,19 @@ def new_account(request, pk):
         return Response({}, status=status.HTTP_404_NOT_FOUND)
     cluster = clusters[0]
 
+    master_node_ip = cluster.get_master_node().instance_ip
+
     actions_api = ActionsApi()
-    actions_api.api_client.host = "http://%s:8012" % (cluster.master_node_ip,)
+    actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
     configure_basic_authentication(actions_api, "admin", "pass")
 
     result = actions_api.new_account_post()
 
-    return Response(result, status=201)
+    response = {
+        "username": result.username,
+        "password": result.password
+    }
+    return Response(response, status=201)
 
 
 @api_view(['GET', 'PUT', 'DELETE'])
