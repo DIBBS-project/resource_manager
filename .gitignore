@@ -3,6 +3,7 @@ tmp
 .idea
 db.sqlite3
 rpapp/migrations
+rmapp/migrations
 
 # MAC OS
 

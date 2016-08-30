@@ -10,7 +10,7 @@ schemes:
 # TODO: Change to HTTPS when not on localhost!
   - http
 # will be prefixed to all paths
-#basePath: /rpapp
+#basePath: /rmpapp
 consumes:
   - application/json
 produces:

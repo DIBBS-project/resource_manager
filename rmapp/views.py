@@ -4,8 +4,8 @@
 from django.shortcuts import render
 import django.contrib.auth
 
-from rpapp.models import Cluster, Host, Profile, Credential
-from rpapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
+from rmapp.models import Cluster, Host, Profile, Credential
+from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
 from rest_framework import viewsets, permissions, status
 
@@ -148,7 +148,7 @@ def cluster_list(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        from rpapp.core.mister_cluster import MisterCluster
+        from rmapp.core.mister_cluster import MisterCluster
 
         data2 = {}
         for key in request.data:
@@ -163,7 +163,7 @@ def cluster_list(request):
                 missing_fields += [required_field]
 
         if len(missing_fields) == 0:
-            from rpapp import models
+            from rmapp import models
             cluster = models.Cluster()
             for field in data2:
                 setattr(cluster, field, data2[field])
@@ -183,7 +183,7 @@ def new_account(request, pk):
     """
     Create a new temporary user account on an existing cluster.
     """
-    from rpapp.rpa_client.apis import ActionsApi
+    from rmapp.rpa_client.apis import ActionsApi
 
     clusters = Cluster.objects.filter(id=pk).all()
     if len(clusters) == 0:
@@ -246,7 +246,7 @@ def host_list(request):
         return Response(serializer.data)
 
     elif request.method == 'POST':
-        from rpapp.core.mister_cluster import MisterCluster
+        from rmapp.core.mister_cluster import MisterCluster
         data = JSONParser().parse(request)
         required_fields = ["cluster_id"]
         missing_fields = []
@@ -256,7 +256,7 @@ def host_list(request):
                 missing_fields += [required_field]
 
         if len(missing_fields) == 0:
-            from rpapp import models
+            from rmapp import models
             host = models.Host()
             for field in data:
                 setattr(host, field, data[field])
@@ -302,7 +302,7 @@ def get_certificate(request, pk):
     user = django.contrib.auth.get_user_model().objects.filter(id=pk)
     if user:
         tmp_folder = "tmp/%s" % user[0].username
-        from rpapp.core.authenticator import Authenticator
+        from rmapp.core.authenticator import Authenticator
         authenticator = Authenticator()
         certificate = authenticator.generate_public_certification(tmp_folder)
         return HttpResponse(certificate)

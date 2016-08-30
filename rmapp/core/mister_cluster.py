@@ -2,9 +2,9 @@
 
 from novaclient.v2 import client
 
-from rpapp.conf import config
-from rpapp.core.authenticator import Authenticator
-from rpapp.lib.common import *
+from rmapp.conf import config
+from rmapp.core.authenticator import Authenticator
+from rmapp.lib.common import *
 from scheduling_policies import DummySchedulingPolicy as SchedulingPolicy
 
 logging.basicConfig(level=logging.INFO)
@@ -149,10 +149,10 @@ class MisterCluster:
         # cluster.save()
 
     def add_node_to_cluster(self, host, master=None):
-        from rpapp.ar_client.apis.appliances_api import AppliancesApi
-        from rpapp.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-        from rpapp.ar_client.apis.sites_api import SitesApi
-        from rpapp.models import Cluster
+        from rmapp.ar_client.apis.appliances_api import AppliancesApi
+        from rmapp.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
+        from rmapp.ar_client.apis.sites_api import SitesApi
+        from rmapp.models import Cluster
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster

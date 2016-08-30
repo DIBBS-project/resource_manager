@@ -1,6 +1,6 @@
 from django.conf.urls import include, url
 from django.contrib import admin
-from rpapp import views
+from rmapp import views
 from rest_framework.routers import DefaultRouter
 import rest_framework.authtoken.views
 

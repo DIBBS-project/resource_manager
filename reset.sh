@@ -1,6 +1,6 @@
 #! /bin/bash
 
-APP=rpapp
+APP=rmapp
 
 echo "[RESET] Resetting the application..."
 rm -rf tmp

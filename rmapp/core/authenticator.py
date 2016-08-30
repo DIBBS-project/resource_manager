@@ -2,7 +2,7 @@
 
 from subprocess import check_output
 
-from rpapp.lib.common import *
+from rmapp.lib.common import *
 
 
 class Authenticator(object):

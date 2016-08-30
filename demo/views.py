@@ -1,6 +1,6 @@
 from django.shortcuts import render
 
-import rpapp.models as models
+import rmapp.models as models
 
 
 # Create your views here.
