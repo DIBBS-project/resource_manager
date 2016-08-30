@@ -19,5 +19,5 @@ class Settings(object):
         self.operation_registry_url = "http://127.0.0.1:8000"
         self.operation_manager_url = "http://127.0.0.1:8001"
         self.resource_manager_url = "http://127.0.0.1:8002"
-        self.operation_manager_agent_url = "http://127.0.0.1:8021"
-        self.resource_manager_agent_url = "http://127.0.0.1:8022"
+        self.operation_manager_agent_url = "http://127.0.0.1:8011"
+        self.resource_manager_agent_url = "http://127.0.0.1:8012"
