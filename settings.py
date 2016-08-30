@@ -16,8 +16,8 @@ class Settings(object):
         Constructor
         """
         self.appliance_registry_url = "http://127.0.0.1:8003"
-        self.process_registry_url = "http://127.0.0.1:8000"
-        self.process_dispatcher_url = "http://127.0.0.1:8001"
-        self.resource_provisioner_url = "http://127.0.0.1:8002"
-        self.process_manager_agent_url = "http://127.0.0.1:8021"
+        self.operation_registry_url = "http://127.0.0.1:8000"
+        self.operation_manager_url = "http://127.0.0.1:8001"
+        self.resource_manager_url = "http://127.0.0.1:8002"
+        self.operation_manager_agent_url = "http://127.0.0.1:8021"
         self.resource_manager_agent_url = "http://127.0.0.1:8022"
