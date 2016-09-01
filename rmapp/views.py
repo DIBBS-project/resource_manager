@@ -16,6 +16,8 @@ from django.http import HttpResponse
 
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
+from rmapp.core.mister_cluster import MisterCluster
+from rest_framework.decorators import detail_route
 
 import base64
 
@@ -40,6 +42,148 @@ def configure_basic_authentication(swagger_client, username, password):
     header_key = "Authorization"
     header_value = "Basic %s" % (base64_authentication_string, )
     swagger_client.api_client.default_headers[header_key] = header_value
+
+
+##############################
+# Cluster management
+##############################
+
+
+class ClusterViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+
+    queryset = Cluster.objects.all()
+    serializer_class = ClusterSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def create(self, request, *args, **kwargs):
+        from ar_client.apis.appliances_api import AppliancesApi
+
+        data2 = {}
+        for key in request.data:
+            data2[key] = request.data[key]
+        data2[u'user'] = request.user.id
+
+        # Retrieve site information with the Appliance Registry API (check for existence)
+        appliance = AppliancesApi().appliances_name_get(name=data2[u'appliance'])
+
+        serializer = self.get_serializer(data=data2)
+        serializer.is_valid(raise_exception=True)
+
+        cluster = Cluster()
+        cluster.appliance = appliance.name
+        cluster.user_id = request.user.id
+        cluster.name = data2["name"]
+        cluster.save()
+
+        mister_cluster = MisterCluster()
+        mister_cluster.generate_clusters_keypairs(cluster)
+
+        serializer = ClusterSerializer(cluster)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @detail_route(methods=['post'])
+    def new_account(self, request, pk):
+        """
+        Create a new temporary user account on an existing cluster.
+        """
+        from rmapp.rpa_client.apis import ActionsApi
+
+        clusters = Cluster.objects.filter(id=pk).all()
+        if len(clusters) == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        cluster = clusters[0]
+
+        master_node_ip = cluster.get_master_node().instance_ip
+
+        actions_api = ActionsApi()
+        actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
+        configure_basic_authentication(actions_api, "admin", "pass")
+
+        result = actions_api.new_account_post()
+
+        response = {
+            "username": result.username,
+            "password": result.password
+        }
+        return Response(response, status=201)
+
+
+##############################
+# Host management
+##############################
+
+
+class HostViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+
+    queryset = Host.objects.all()
+    serializer_class = HostSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def create(self, request, *args, **kwargs):
+        data = JSONParser().parse(request)
+
+        data2 = {}
+        for key in data:
+            data2[key] = data[key]
+        data2[u'user'] = request.user.id
+
+        host = Host()
+        for field in data2:
+            setattr(host, field, data2[field])
+        host.save()
+
+        mister_cluster = MisterCluster()
+        if not ("action" in data and data["action"] == "nodeploy"):
+            mister_cluster.add_node_to_cluster(host)
+        return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
+
+
+##############################
+# Credentials management
+##############################
+
+
+class CredentialViewSet(viewsets.ModelViewSet):
+    """
+    This viewset automatically provides `list`, `create`, `retrieve`,
+    `update` and `destroy` actions.
+    """
+
+    queryset = Credential.objects.all()
+    serializer_class = CredentialSerializer
+    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+
+    def create(self, request, *args, **kwargs):
+        data2 = {}
+        for key in request.data:
+            data2[key] = request.data[key]
+        data2[u'user'] = request.user.id
+
+        serializer = self.get_serializer(data=data2)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+
+
+@api_view(['GET'])
+def credentials_for_user(request, user_id):
+    try:
+        creds = Credential.objects.filter(user_id=user_id)
+        response = []
+        for cred in creds:
+            response.append(CredentialSerializer(cred))
+    except:
+        return Response({"error": "Cannot find user %s" % user_id}, status=404)
+    return Response(response)
 
 
 ##############################
@@ -69,38 +213,6 @@ class UserViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
-class CredentialViewSet(viewsets.ModelViewSet):
-    """
-    This viewset automatically provides `list`, `create`, `retrieve`,
-    `update` and `destroy` actions.
-    """
-
-    queryset = Credential.objects.all()
-    serializer_class = CredentialSerializer
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def create(self, request, *args, **kwargs):
-        from ar_client.apis.sites_api import SitesApi
-        import crypto
-
-        data2 = {}
-        for key in request.data:
-            data2[key] = request.data[key]
-        data2[u'user'] = request.user.id
-
-        # Retrieve site information with the Appliance Registry API (check for existence)
-        SitesApi().sites_name_get(name=data2[u'site_name'])
-        # Use the private key de temporarily decrypt and check that it gives JSON
-        decrypted_credentials = crypto.decrypt_credentials(data2[u'credentials'], user_id=request.user.id)
-        # TODO (someday): Check that the credentials are correct (or at least that all the information is provided)
-
-        serializer = self.get_serializer(data=data2)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
 class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
@@ -123,60 +235,6 @@ def rsa_public_key(request, user_id):
     return Response({"public_key": public_key_str})
 
 
-@api_view(['GET'])
-def credentials_for_user(request, user_id):
-    try:
-        creds = Credential.objects.filter(user_id=user_id)
-        response = []
-        for cred in creds:
-            response.append(CredentialSerializer(cred))
-    except:
-        return Response({"error": "Cannot find user %s" % user_id}, status=404)
-    return Response(response)
-
-
-# Methods related to Cluster
-@api_view(['GET', 'POST'])
-@csrf_exempt
-def cluster_list(request):
-    """
-    List all clusters, or create a new cluster.
-    """
-    if request.method == 'GET':
-        clusters = Cluster.objects.all()
-        serializer = ClusterSerializer(clusters, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        from rmapp.core.mister_cluster import MisterCluster
-
-        data2 = {}
-        for key in request.data:
-            data2[key] = request.data[key]
-        data2['user_id'] = request.user.id
-
-        required_fields = ["appliance", "user_id", "name"]
-        missing_fields = []
-
-        for required_field in required_fields:
-            if required_field not in data2:
-                missing_fields += [required_field]
-
-        if len(missing_fields) == 0:
-            from rmapp import models
-            cluster = models.Cluster()
-            for field in data2:
-                setattr(cluster, field, data2[field])
-            cluster.save()
-            mister_cluster = MisterCluster()
-            mister_cluster.generate_clusters_keypairs(cluster)
-            serializer = ClusterSerializer(cluster)
-            return Response(serializer.data, status=201)
-
-        return Response({"missing_fields": missing_fields}, status=400)
-
-
-# Methods related to Cluster
 @api_view(['POST'])
 @csrf_exempt
 def new_account(request, pk):
@@ -203,99 +261,6 @@ def new_account(request, pk):
         "password": result.password
     }
     return Response(response, status=201)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@csrf_exempt
-def cluster_detail(request, pk):
-    """
-    Retrieve, update or delete a cluster.
-    """
-    try:
-        cluster = Cluster.objects.get(pk=pk)
-    except Cluster.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == 'GET':
-        serializer = ClusterSerializer(cluster)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = ClusterSerializer(cluster, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    elif request.method == 'DELETE':
-        cluster.delete()
-        return HttpResponse(status=204)
-
-
-# Methods related to Host
-@api_view(['GET', 'POST', 'PATCH'])
-@csrf_exempt
-def host_list(request):
-    """
-    List all code snippets, or create a new host.
-    """
-    if request.method == 'GET':
-        hosts = Host.objects.all()
-        serializer = HostSerializer(hosts, many=True)
-        return Response(serializer.data)
-
-    elif request.method == 'POST':
-        from rmapp.core.mister_cluster import MisterCluster
-        data = JSONParser().parse(request)
-        required_fields = ["cluster_id"]
-        missing_fields = []
-
-        for required_field in required_fields:
-            if required_field not in data:
-                missing_fields += [required_field]
-
-        if len(missing_fields) == 0:
-            from rmapp import models
-            host = models.Host()
-            for field in data:
-                setattr(host, field, data[field])
-            host.save()
-            mister_cluster = MisterCluster()
-            # cluster_id = data["cluster_id"]
-            if not ("action" in data and data["action"] == "nodeploy"):
-                mister_cluster.add_node_to_cluster(host)
-            return Response({"host_id": host.id}, status=201)
-
-        return Response({"missing_fields": missing_fields}, status=400)
-
-
-@api_view(['GET', 'PUT', 'DELETE'])
-@csrf_exempt
-def host_detail(request, pk):
-    """
-    Retrieve, update or delete an host.
-    """
-    try:
-        host = Host.objects.get(pk=pk)
-    except Host.DoesNotExist:
-        return HttpResponse(status=404)
-
-    if request.method == 'GET':
-        serializer = HostSerializer(host)
-        return Response(serializer.data)
-
-    elif request.method == 'PUT':
-        data = JSONParser().parse(request)
-        serializer = HostSerializer(host, data=data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=400)
-
-    elif request.method == 'DELETE':
-        host.delete()
-        return HttpResponse(status=204)
 
 
 def get_certificate(request, pk):
