@@ -117,10 +117,10 @@ def rsa_public_key(request, user_id):
     try:
         profile = Profile.objects.get(user=user_id)
         key = RSA.importKey(profile.rsa_key)
-        public_key = key.publickey()
+        public_key_str = key.publickey().exportKey()
     except:
         return Response({"error": "Cannot find user %s" % user_id}, status=404)
-    return Response({"public_key": public_key.exportKey()})
+    return Response({"public_key": public_key_str})
 
 
 @api_view(['GET'])

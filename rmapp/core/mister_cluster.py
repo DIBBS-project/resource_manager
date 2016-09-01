@@ -6,6 +6,7 @@ from rmapp.conf import config
 from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
 from scheduling_policies import DummySchedulingPolicy as SchedulingPolicy
+import novaclient.exceptions as NovaExceptions
 
 logging.basicConfig(level=logging.INFO)
 
@@ -40,8 +41,14 @@ class MisterCluster:
 
         # TODO: flavor_name is kind of hardcoded: it should be more generic!
         logging.info("Looking for the flavor")
-        flavor_name = config.configuration["flavor_name"]
-        flavor = nova_client.flavors.find(name=flavor_name)
+        flavor = None
+        for flavor_name in config.configuration["flavor_names"]:
+            try:
+                flavor = nova_client.flavors.find(name=flavor_name)
+            except NovaExceptions.NotFound:
+                pass
+            if flavor is not None:
+                break
         if flavor is None:
             logging.error("Could not found the requested flavor (name=%s)" % (flavor_name))
             raise "Could not found the requested flavor (name=%s)" % (flavor_name)
