@@ -160,7 +160,7 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
-  /clusters/{id}/new_account:
+  /clusters/{id}/new_account/:
     post:
       summary: Create a new user account on the specified cluster.
       description: |
