@@ -67,8 +67,16 @@ class ClusterViewSet(viewsets.ModelViewSet):
             data2[key] = request.data[key]
         data2[u'user'] = request.user.id
 
+        from ar_client.apis.appliances_api import AppliancesApi
+        from settings import Settings
+
+        # Create a client for Appliances
+        appliances_client = AppliancesApi()
+        appliances_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(appliances_client, "admin", "pass")
+
         # Retrieve site information with the Appliance Registry API (check for existence)
-        appliance = AppliancesApi().appliances_name_get(name=data2[u'appliance'])
+        appliance = appliances_client.appliances_name_get(name=data2[u'appliance'])
 
         serializer = self.get_serializer(data=data2)
         serializer.is_valid(raise_exception=True)
