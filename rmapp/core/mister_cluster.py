@@ -7,6 +7,8 @@ from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
 from scheduling_policies import DummySchedulingPolicy as SchedulingPolicy
 import novaclient.exceptions as NovaExceptions
+from settings import Settings
+from common_dibbs.misc import configure_basic_authentication
 
 logging.basicConfig(level=logging.INFO)
 
@@ -145,19 +147,35 @@ class MisterCluster:
         # cluster.save()
 
     def add_node_to_cluster(self, host, master=None):
-        from rmapp.ar_client.apis.appliances_api import AppliancesApi
-        from rmapp.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-        from rmapp.ar_client.apis.sites_api import SitesApi
+        from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
+        from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
+        from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
         from rmapp.models import Cluster
         logging.info("Starting addition of a node (%s) to the cluster <%s>" % (host.id, host.cluster_id))
 
         cluster_db_object = host.cluster
         cluster_db_object.status = "Adding a node"
         cluster_db_object.save()
-        appliance = AppliancesApi().appliances_name_get(cluster_db_object.appliance)
 
-        sites = SitesApi().sites_get()
-        implementations = ApplianceImplementationsApi().appliances_impl_get()
+        # Create a client for Appliances
+        appliances_client = AppliancesApi()
+        appliances_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(appliances_client, "admin", "pass")
+
+        # Create a client for ApplianceImplementations
+        appliance_implementations_client = ApplianceImplementationsApi()
+        appliance_implementations_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(appliance_implementations_client, "admin", "pass")
+
+        # Create a client for Sites
+        sites_client = SitesApi()
+        sites_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(sites_client, "admin", "pass")
+
+        appliance = appliances_client.appliances_name_get(cluster_db_object.appliance)
+
+        sites = sites_client.sites_get()
+        implementations = appliance_implementations_client.appliances_impl_get()
         clusters = Cluster.objects.all()
 
         appliance_impl_name = cluster_db_object.appliance_impl
@@ -177,8 +195,8 @@ class MisterCluster:
             cluster_db_object.common_appliance_impl = common_appliance_impl_name
             cluster_db_object.save()
         else:
-            appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(appliance_impl_name)
-            common_appliance_impl = ApplianceImplementationsApi().appliances_impl_name_get(common_appliance_impl_name)
+            appliance_impl = appliance_implementations_client.appliances_impl_name_get(appliance_impl_name)
+            common_appliance_impl = appliance_implementations_client.appliances_impl_name_get(common_appliance_impl_name)
 
         if appliance_impl is None or common_appliance_impl is None:
             cluster_db_object.status = "Error"
@@ -278,7 +296,6 @@ class MisterCluster:
             host.save()
             logging.info("A master node of cluster <%s> has been elected" % (host.cluster_id))
 
-        #time.sleep(8)  # TODO: Replace this by a loop on Paramiko in update_hosts_file
         instances_ids = map(lambda x: x.instance_id, cluster_db_object.host_set.all())
         instances = map(lambda id: nova_client.servers.find(id=id), instances_ids)
         variables["nodes"] = instances
@@ -314,10 +331,6 @@ class MisterCluster:
             variables["master_ip"] = floating_ip
             variables["master_name"] = instance.name
 
-        # Giving time to the instance to fully startup
-        # time.sleep(10)
-
-
         execute_ssh_cmd(ssh, "touch success")
 
         # Configure Node
@@ -327,7 +340,6 @@ class MisterCluster:
 
         sftp = ssh.open_sftp()
         sftp.put(prepare_node_path, 'prepare_node.sh')
-        # time.sleep(1)
 
         execute_ssh_cmd(ssh, "bash prepare_node.sh")
 
@@ -340,13 +352,11 @@ class MisterCluster:
 
         sftp = ssh.open_sftp()
         sftp.put(configure_node_path, 'configure_node.sh')
-        # time.sleep(5)
         execute_ssh_cmd(ssh, "bash configure_node.sh")
 
         logging.info("The node joined the cluster!")
 
         if not is_master:
-            # time.sleep(30)
             # Updating master_node
             logging.info("Connecting to the master node")
             master_node_floating_ip = detect_floating_ip_from_instance(master)

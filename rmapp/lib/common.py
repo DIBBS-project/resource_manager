@@ -6,6 +6,8 @@ import sys
 import time
 import paramiko
 from jinja2 import Environment, FileSystemLoader, Template
+from settings import Settings
+from common_dibbs.misc import configure_basic_authentication
 
 logging.basicConfig(level=logging.INFO)
 
@@ -45,8 +47,14 @@ def generate_template_file_from_string(string, output_file, context):
 
 
 def get_template_from_appliance_registry(appliance_impl_name, action_name):
-    from rmapp.ar_client.apis.scripts_api import ScriptsApi
-    script = ScriptsApi().scripts_appliance_action_get(appliance_impl_name, action_name)
+    from common_dibbs.clients.ar_client.apis.scripts_api import ScriptsApi
+
+    # Create a client for Scripts
+    scripts_client = ScriptsApi()
+    scripts_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+    configure_basic_authentication(scripts_client, "admin", "pass")
+
+    script = scripts_client.scripts_appliance_action_get(appliance_impl_name, action_name)
     # TODO fix
     print (script)
     return script.code

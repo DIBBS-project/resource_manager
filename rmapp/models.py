@@ -9,6 +9,8 @@ from django.dispatch import receiver
 from django.contrib import auth
 from rest_framework.authtoken.models import Token
 import uuid
+from settings import Settings
+from common_dibbs.misc import configure_basic_authentication
 
 # Create your models here.
 
@@ -48,18 +50,28 @@ class Cluster(models.Model):
         return candidates[0] if len(candidates) > 0 else None
 
     def get_full_credentials(self):
-        from ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-        from ar_client.apis.sites_api import SitesApi
+        from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
+        from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
         import crypto
 
-        appl_impl = ApplianceImplementationsApi().appliances_impl_name_get(name=str(self.appliance_impl))
+        # Create a client for ApplianceImplementations
+        appliance_implementations_client = ApplianceImplementationsApi()
+        appliance_implementations_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(appliance_implementations_client, "admin", "pass")
+
+        # Create a client for Sites
+        sites_client = SitesApi()
+        sites_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(sites_client, "admin", "pass")
+
+        appl_impl = appliance_implementations_client.appliances_impl_name_get(name=str(self.appliance_impl))
 
         user = auth.get_user_model().objects.get(id=self.user_id)
         full_credentials = None
         for creds in user.credentials.all():
             if creds.site_name == appl_impl.site:
                 full_credentials = {
-                    "site": SitesApi().sites_name_get(name=creds.site_name),
+                    "site": sites_client.sites_name_get(name=creds.site_name),
                     "user": self.user,
                     "credentials": crypto.decrypt_credentials(creds.credentials, user_id=self.user_id)
                 }

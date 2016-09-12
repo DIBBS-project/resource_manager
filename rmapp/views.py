@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from django.shortcuts import render
 import django.contrib.auth
+from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
+from common_dibbs.clients.rpa_client.apis import ActionsApi
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import api_view
+from rest_framework.decorators import detail_route
+from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
 
+from rmapp.core.mister_cluster import MisterCluster
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
-
-from rest_framework import viewsets, permissions, status
-
-from django.views.decorators.csrf import csrf_exempt
-
-from rest_framework.parsers import JSONParser
-from django.http import HttpResponse
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rmapp.core.mister_cluster import MisterCluster
-from rest_framework.decorators import detail_route
-
-import base64
-
-from lib.views_decorators import *
-
+from settings import Settings
 # import the logging library
 import logging
+from common_dibbs.misc import configure_basic_authentication
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -34,14 +29,6 @@ logger = logging.getLogger(__name__)
 def index(request):
     clusters = Cluster.objects.all()
     return render(request, "index.html", {"clusters": clusters})
-
-
-def configure_basic_authentication(swagger_client, username, password):
-    authentication_string = "%s:%s" % (username, password)
-    base64_authentication_string = base64.b64encode(bytes(authentication_string))
-    header_key = "Authorization"
-    header_value = "Basic %s" % (base64_authentication_string, )
-    swagger_client.api_client.default_headers[header_key] = header_value
 
 
 ##############################
@@ -60,15 +47,10 @@ class ClusterViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def create(self, request, *args, **kwargs):
-        from ar_client.apis.appliances_api import AppliancesApi
-
         data2 = {}
         for key in request.data:
             data2[key] = request.data[key]
         data2[u'user'] = request.user.id
-
-        from ar_client.apis.appliances_api import AppliancesApi
-        from settings import Settings
 
         # Create a client for Appliances
         appliances_client = AppliancesApi()
@@ -98,7 +80,6 @@ class ClusterViewSet(viewsets.ModelViewSet):
         """
         Create a new temporary user account on an existing cluster.
         """
-        from rmapp.rpa_client.apis import ActionsApi
 
         clusters = Cluster.objects.filter(id=pk).all()
         if len(clusters) == 0:
@@ -249,7 +230,6 @@ def new_account(request, pk):
     """
     Create a new temporary user account on an existing cluster.
     """
-    from rmapp.rpa_client.apis import ActionsApi
 
     clusters = Cluster.objects.filter(id=pk).all()
     if len(clusters) == 0:
