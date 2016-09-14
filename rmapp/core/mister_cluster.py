@@ -5,7 +5,7 @@ from novaclient.v2 import client
 from rmapp.conf import config
 from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
-from scheduling_policies import DummySchedulingPolicy as SchedulingPolicy
+from scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
 import novaclient.exceptions as NovaExceptions
 from settings import Settings
 from common_dibbs.misc import configure_basic_authentication
@@ -183,16 +183,19 @@ class MisterCluster:
 
         if appliance_impl_name == "" or common_appliance_impl_name == "":
             # TODO: Change the signature of this function, no need for all this information as well as common_a_impl
-            (appliance_impl, common_appliance_impl) = SchedulingPolicy().choose_appliance_implementation(
+            # HINT INSERTION: Add a hint to this function to help to chose the right site
+            (appliance_impl, common_appliance_impl, credential) = SchedulingPolicy().choose_appliance_implementation(
                 appliance,
                 implementations,
                 sites,
-                clusters
+                clusters,
+                cluster_db_object.hints
             )
             appliance_impl_name = appliance_impl.name
             common_appliance_impl_name = common_appliance_impl.name
             cluster_db_object.appliance_impl = appliance_impl_name
             cluster_db_object.common_appliance_impl = common_appliance_impl_name
+            cluster_db_object.credential = credential.name
             cluster_db_object.save()
         else:
             appliance_impl = appliance_implementations_client.appliances_impl_name_get(appliance_impl_name)

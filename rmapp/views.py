@@ -67,6 +67,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster.appliance = appliance.name
         cluster.user_id = request.user.id
         cluster.name = data2["name"]
+        cluster.hints = data2["hints"]
         cluster.save()
 
         mister_cluster = MisterCluster()

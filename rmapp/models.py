@@ -21,6 +21,7 @@ def generate_uuid():
 
 class Credential(models.Model):
     site_name = models.CharField(max_length=100)
+    name = models.CharField(max_length=100)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='credentials', on_delete=models.CASCADE)
     credentials = models.TextField()
 
@@ -38,6 +39,8 @@ class Cluster(models.Model):
     public_key = models.TextField(max_length=1000, blank=True, default='')
 
     status = models.CharField(max_length=100, blank=True, default='IDLE')
+    hints = models.CharField(max_length=100, blank=True, default='{}')
+    credential = models.CharField(max_length=100, blank=True, default='')
 
     # Relationships
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
@@ -68,7 +71,8 @@ class Cluster(models.Model):
 
         user = auth.get_user_model().objects.get(id=self.user_id)
         full_credentials = None
-        for creds in user.credentials.all():
+        possible_credentials = user.credentials.all() if self.credential == "" else Credential.objects.filter(name=self.credential)
+        for creds in possible_credentials:
             if creds.site_name == appl_impl.site:
                 full_credentials = {
                     "site": sites_client.sites_name_get(name=creds.site_name),
