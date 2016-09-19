@@ -10,6 +10,7 @@ import novaclient.exceptions as NovaExceptions
 from settings import Settings
 from common_dibbs.misc import configure_basic_authentication
 
+
 logging.basicConfig(level=logging.INFO)
 
 authenticator = Authenticator()
@@ -383,3 +384,27 @@ class MisterCluster:
         cluster_db_object.status = "IDLE"
         cluster_db_object.save()
         return True
+
+    def delete_node_from_cluster(self, host):
+        logging.info("Starting deletion of a node (%s) from the cluster <%s>" % (host.id, host.cluster_id))
+
+        cluster_db_object = host.cluster
+        cluster_db_object.status = "Adding a node"
+        cluster_db_object.save()
+
+        try:
+            # Getting credentials
+            full_credentials = cluster_db_object.get_full_credentials()
+            if full_credentials is None:
+                # TODO: Fail more gracefully
+                raise Exception("No credentials for the selected site!")
+            nova_client = self.get_novaclient_from_credentials(full_credentials)
+
+            # Deleting the corresponding instance
+
+            nova_client.servers.delete(host.instance_id)
+            result = True
+        except Exception:
+            result = False
+
+        return result

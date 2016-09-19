@@ -7,7 +7,7 @@ python-novaclient
 django-secure
 django-sslserver
 paramiko
-common-dibbs==0.1.4
+common-dibbs
 
 pycrypto
 

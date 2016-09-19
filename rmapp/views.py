@@ -76,6 +76,23 @@ class ClusterViewSet(viewsets.ModelViewSet):
         serializer = ClusterSerializer(cluster)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, *args, **kwargs):
+        if "pk" in kwargs:
+            cluster_id = kwargs["pk"]
+            candidates = Cluster.objects.filter(id=cluster_id)
+            if len(candidates) > 0:
+                cluster = candidates[0]
+                # Remove all cluster's host
+                for host in cluster.host_set.all():
+                    result = delete_host_instance(host)
+                    if result:
+                        host.delete()
+
+        # clusters = Cluster.objects.all()
+        # serializer = ClusterSerializer(clusters)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
+
     @detail_route(methods=['post'])
     def new_account(self, request, pk):
         """
@@ -106,6 +123,17 @@ class ClusterViewSet(viewsets.ModelViewSet):
 # Host management
 ##############################
 
+def add_host(host):
+    mister_cluster = MisterCluster()
+    result = mister_cluster.add_node_to_cluster(host)
+    return result
+
+
+def delete_host_instance(host):
+    mister_cluster = MisterCluster()
+    result = mister_cluster.delete_node_from_cluster(host)
+    return result
+
 
 class HostViewSet(viewsets.ModelViewSet):
     """
@@ -130,10 +158,21 @@ class HostViewSet(viewsets.ModelViewSet):
             setattr(host, field, data2[field])
         host.save()
 
-        mister_cluster = MisterCluster()
         if not ("action" in data and data["action"] == "nodeploy"):
-            mister_cluster.add_node_to_cluster(host)
+            add_host(host)
         return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        if "pk" in kwargs:
+            host_id = kwargs["pk"]
+            candidates = Host.objects.filter(id=host_id)
+            if len(candidates) > 0:
+                host = candidates[0]
+                result = delete_host_instance(host)
+                if not result:
+                    raise Exception("Could not delete instance associated to host %s" % (host_id))
+
+        return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
 
 
 ##############################

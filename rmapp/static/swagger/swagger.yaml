@@ -232,6 +232,7 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
+
   /hosts/{id}/:
     get:
       summary: Get a single host definition.
@@ -260,6 +261,33 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+    delete:
+      summary: Delete an existing host definition.
+      description: |
+        Delete an already existing host definition. Authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the host
+          required: true
+          type: integer
+          minimum: 0
+      security:
+        - basic: []
+        - api_key: []
+      tags:
+        - Host definitions
+      responses:
+        204:
+          description: host correctly deleted
+        404:
+          description: No host with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /users/:
     get:
