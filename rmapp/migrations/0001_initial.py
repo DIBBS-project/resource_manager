@@ -23,6 +23,8 @@ class Migration(migrations.Migration):
                 ('private_key', models.TextField(default=b'', max_length=1000, blank=True)),
                 ('public_key', models.TextField(default=b'', max_length=1000, blank=True)),
                 ('status', models.CharField(default=b'IDLE', max_length=100, blank=True)),
+                ('hints', models.CharField(default=b'{}', max_length=100, blank=True)),
+                ('credential', models.CharField(default=b'', max_length=100, blank=True)),
                 ('appliance', models.CharField(max_length=100)),
                 ('appliance_impl', models.CharField(max_length=100, blank=True)),
                 ('common_appliance_impl', models.CharField(max_length=100, blank=True)),
@@ -33,6 +35,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('site_name', models.CharField(max_length=100)),
+                ('name', models.CharField(max_length=100)),
                 ('credentials', models.TextField()),
             ],
         ),

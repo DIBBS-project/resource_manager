@@ -232,6 +232,7 @@ paths:
           description: Unexpected error
           schema:
             $ref: '#/definitions/Error'
+
   /hosts/{id}/:
     get:
       summary: Get a single host definition.
@@ -260,6 +261,33 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+    delete:
+      summary: Delete an existing host definition.
+      description: |
+        Delete an already existing host definition. Authentification is required.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the host
+          required: true
+          type: integer
+          minimum: 0
+      security:
+        - basic: []
+        - api_key: []
+      tags:
+        - Host definitions
+      responses:
+        204:
+          description: host correctly deleted
+        404:
+          description: No host with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
 
   /users/:
     get:
@@ -696,6 +724,12 @@ definitions:
       uuid:
         type: string
         description: Internal UUID given to the cluster
+      hints:
+        type: string
+        description: hints that will be used to select the infrastructure that will host cluster's nodes
+      credential:
+        type: string
+        description: hints that will be used to select the infrastructure that will host cluster's nodes
       public_key:
         type: string
         description: Public key used to identify nodes of the cluster
@@ -864,11 +898,15 @@ definitions:
     required:
       - site_name
       - user
+      - name
       - credentials
     properties:
       site_name:
         type: string
         description: Name of the site
+      name:
+        type: string
+        description: Name of the credential
       user:
         type: integer
         description: ID of the user
@@ -879,11 +917,15 @@ definitions:
     type: object
     required:
       - site_name
+      - name
       - credentials
     properties:
       site_name:
         type: string
         description: Name of the site
+      name:
+        type: string
+        description: Name of the credential
       credentials:
         type: string
         description: Encrypted credentials (JSON format encrypted)
@@ -893,6 +935,9 @@ definitions:
       site_name:
         type: string
         description: Name of the site
+      name:
+        type: string
+        description: Name of the credential
       credentials:
         type: string
         description: Encrypted credentials (JSON format encrypted)

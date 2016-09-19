@@ -1,30 +1,25 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from django.shortcuts import render
 import django.contrib.auth
+from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
+from common_dibbs.clients.rpa_client.apis import ActionsApi
+from django.http import HttpResponse
+from django.shortcuts import render
+from django.views.decorators.csrf import csrf_exempt
+from rest_framework import viewsets, permissions, status
+from rest_framework.decorators import api_view
+from rest_framework.decorators import detail_route
+from rest_framework.parsers import JSONParser
+from rest_framework.response import Response
 
+from rmapp.core.mister_cluster import MisterCluster
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
-
-from rest_framework import viewsets, permissions, status
-
-from django.views.decorators.csrf import csrf_exempt
-
-from rest_framework.parsers import JSONParser
-from django.http import HttpResponse
-
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rmapp.core.mister_cluster import MisterCluster
-from rest_framework.decorators import detail_route
-
-import base64
-
-from lib.views_decorators import *
-
+from settings import Settings
 # import the logging library
 import logging
+from common_dibbs.misc import configure_basic_authentication
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -34,14 +29,6 @@ logger = logging.getLogger(__name__)
 def index(request):
     clusters = Cluster.objects.all()
     return render(request, "index.html", {"clusters": clusters})
-
-
-def configure_basic_authentication(swagger_client, username, password):
-    authentication_string = "%s:%s" % (username, password)
-    base64_authentication_string = base64.b64encode(bytes(authentication_string))
-    header_key = "Authorization"
-    header_value = "Basic %s" % (base64_authentication_string, )
-    swagger_client.api_client.default_headers[header_key] = header_value
 
 
 ##############################
@@ -60,15 +47,18 @@ class ClusterViewSet(viewsets.ModelViewSet):
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
     def create(self, request, *args, **kwargs):
-        from ar_client.apis.appliances_api import AppliancesApi
-
         data2 = {}
         for key in request.data:
             data2[key] = request.data[key]
         data2[u'user'] = request.user.id
 
+        # Create a client for Appliances
+        appliances_client = AppliancesApi()
+        appliances_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        configure_basic_authentication(appliances_client, "admin", "pass")
+
         # Retrieve site information with the Appliance Registry API (check for existence)
-        appliance = AppliancesApi().appliances_name_get(name=data2[u'appliance'])
+        appliance = appliances_client.appliances_name_get(name=data2[u'appliance'])
 
         serializer = self.get_serializer(data=data2)
         serializer.is_valid(raise_exception=True)
@@ -77,6 +67,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster.appliance = appliance.name
         cluster.user_id = request.user.id
         cluster.name = data2["name"]
+        cluster.hints = data2["hints"]
         cluster.save()
 
         mister_cluster = MisterCluster()
@@ -85,12 +76,28 @@ class ClusterViewSet(viewsets.ModelViewSet):
         serializer = ClusterSerializer(cluster)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
+    def destroy(self, request, *args, **kwargs):
+        if "pk" in kwargs:
+            cluster_id = kwargs["pk"]
+            candidates = Cluster.objects.filter(id=cluster_id)
+            if len(candidates) > 0:
+                cluster = candidates[0]
+                # Remove all cluster's host
+                for host in cluster.host_set.all():
+                    result = delete_host_instance(host)
+                    if result:
+                        host.delete()
+
+        # clusters = Cluster.objects.all()
+        # serializer = ClusterSerializer(clusters)
+        # return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
+
     @detail_route(methods=['post'])
     def new_account(self, request, pk):
         """
         Create a new temporary user account on an existing cluster.
         """
-        from rmapp.rpa_client.apis import ActionsApi
 
         clusters = Cluster.objects.filter(id=pk).all()
         if len(clusters) == 0:
@@ -116,6 +123,17 @@ class ClusterViewSet(viewsets.ModelViewSet):
 # Host management
 ##############################
 
+def add_host(host):
+    mister_cluster = MisterCluster()
+    result = mister_cluster.add_node_to_cluster(host)
+    return result
+
+
+def delete_host_instance(host):
+    mister_cluster = MisterCluster()
+    result = mister_cluster.delete_node_from_cluster(host)
+    return result
+
 
 class HostViewSet(viewsets.ModelViewSet):
     """
@@ -140,10 +158,21 @@ class HostViewSet(viewsets.ModelViewSet):
             setattr(host, field, data2[field])
         host.save()
 
-        mister_cluster = MisterCluster()
         if not ("action" in data and data["action"] == "nodeploy"):
-            mister_cluster.add_node_to_cluster(host)
+            add_host(host)
         return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
+
+    def destroy(self, request, *args, **kwargs):
+        if "pk" in kwargs:
+            host_id = kwargs["pk"]
+            candidates = Host.objects.filter(id=host_id)
+            if len(candidates) > 0:
+                host = candidates[0]
+                result = delete_host_instance(host)
+                if not result:
+                    raise Exception("Could not delete instance associated to host %s" % (host_id))
+
+        return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
 
 
 ##############################
@@ -241,7 +270,6 @@ def new_account(request, pk):
     """
     Create a new temporary user account on an existing cluster.
     """
-    from rmapp.rpa_client.apis import ActionsApi
 
     clusters = Cluster.objects.filter(id=pk).all()
     if len(clusters) == 0:

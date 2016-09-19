@@ -23,7 +23,7 @@ class UserSerializer(serializers.ModelSerializer):
 class CredentialSerializer(serializers.ModelSerializer):
     class Meta:
         model = Credential
-        fields = ('site_name', 'user', 'credentials',)
+        fields = ('site_name', 'name', 'user', 'credentials',)
         extra_kwargs = {
             'credentials': {'write_only': True}
         }
@@ -37,7 +37,7 @@ class ProfileSerializer(serializers.ModelSerializer):
 
 class ClusterSerializer(serializers.ModelSerializer):
     # Custom fields
-    host_ids = serializers.SerializerMethodField('cluster_hosts')
+    hosts_ids = serializers.SerializerMethodField('cluster_hosts')
     hosts_ips = serializers.SerializerMethodField('cluster_hosts_ips')
     master_node_id = serializers.SerializerMethodField('cluster_master_node_id')
     master_node_ip = serializers.SerializerMethodField('cluster_master_node_ip')
@@ -60,9 +60,9 @@ class ClusterSerializer(serializers.ModelSerializer):
     class Meta:
         model = Cluster
         fields = ('id', 'name', 'uuid', 'public_key', 'status',
-                  'host_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',
-                  'appliance', 'appliance_impl', 'common_appliance_impl', 'master_node_id',)
-        read_only_fields = ('id', 'host_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',)
+                  'hosts_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',
+                  'appliance', 'appliance_impl', 'common_appliance_impl', 'master_node_id', 'hints', 'credential')
+        read_only_fields = ('id', 'hosts_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',)
 
 
 class HostSerializer(serializers.ModelSerializer):
