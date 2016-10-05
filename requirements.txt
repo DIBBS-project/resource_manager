@@ -4,6 +4,7 @@ markdown
 django-filter
 jinja2
 python-novaclient
+python-heatclient
 django-secure
 django-sslserver
 paramiko

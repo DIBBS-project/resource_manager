@@ -12,14 +12,19 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import detail_route
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
+import time
+import urllib3.exceptions
 
-from rmapp.core.mister_cluster import MisterCluster
+from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
+# from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
+
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 from settings import Settings
 # import the logging library
 import logging
 from common_dibbs.misc import configure_basic_authentication
+import uuid
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -66,12 +71,12 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster = Cluster()
         cluster.appliance = appliance.name
         cluster.user_id = request.user.id
-        cluster.name = data2["name"]
+        cluster.name = "%s_%s" % (appliance.name, uuid.uuid4())
         cluster.hints = data2["hints"]
         cluster.save()
 
-        mister_cluster = MisterCluster()
-        mister_cluster.generate_clusters_keypairs(cluster)
+        # mister_cluster = MisterClusterImplementation()
+        # mister_cluster.generate_clusters_keypairs(cluster)
 
         serializer = ClusterSerializer(cluster)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -110,7 +115,14 @@ class ClusterViewSet(viewsets.ModelViewSet):
         actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
         configure_basic_authentication(actions_api, "admin", "pass")
 
-        result = actions_api.new_account_post()
+        try_account_creation = True
+        while try_account_creation:
+            try:
+                result = actions_api.new_account_post()
+                try_account_creation = False
+            except:
+                logging.info("service located at 'http://%s:8012' does not seem to be ready, waiting 2 seconds before retrying to contact it" % (master_node_ip,))
+                time.sleep(2)
 
         response = {
             "username": result.username,
@@ -123,15 +135,15 @@ class ClusterViewSet(viewsets.ModelViewSet):
 # Host management
 ##############################
 
-def add_host(host):
-    mister_cluster = MisterCluster()
-    result = mister_cluster.add_node_to_cluster(host)
+def add_host(cluster):
+    mister_cluster = MisterClusterImplementation()
+    result = mister_cluster.resize_cluster(cluster)
     return result
 
 
-def delete_host_instance(host):
-    mister_cluster = MisterCluster()
-    result = mister_cluster.delete_node_from_cluster(host)
+def delete_host_instance(cluster):
+    mister_cluster = MisterClusterImplementation()
+    result = mister_cluster.delete_node_from_cluster(cluster)
     return result
 
 
@@ -153,13 +165,12 @@ class HostViewSet(viewsets.ModelViewSet):
             data2[key] = data[key]
         data2[u'user'] = request.user.id
 
-        host = Host()
-        for field in data2:
-            setattr(host, field, data2[field])
-        host.save()
+        cluster_candidates = Cluster.objects.filter(id=data2["cluster_id"])
+        if len(cluster_candidates) > 0:
+            mister_cluster = MisterClusterImplementation()
+            host = mister_cluster.resize_cluster(cluster_candidates[0],
+                                                 len(list(cluster_candidates[0].host_set.iterator())) + 1)
 
-        if not ("action" in data and data["action"] == "nodeploy"):
-            add_host(host)
         return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
