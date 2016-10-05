@@ -89,9 +89,9 @@ class ClusterViewSet(viewsets.ModelViewSet):
                 cluster = candidates[0]
                 # Remove all cluster's host
                 for host in cluster.host_set.all():
-                    result = delete_host_instance(host)
-                    if result:
-                        host.delete()
+                    host.delete()
+                mister_cluster = MisterClusterImplementation()
+                mister_cluster.delete_cluster(cluster)
 
         # clusters = Cluster.objects.all()
         # serializer = ClusterSerializer(clusters)
@@ -137,13 +137,15 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
 def add_host(cluster):
     mister_cluster = MisterClusterImplementation()
-    result = mister_cluster.resize_cluster(cluster)
+    cluster_slaves = filter(lambda n: not n.is_master, list(cluster.host_set.all()))
+    result = mister_cluster.resize_cluster(cluster, new_size=len(cluster_slaves)+1)
     return result
 
 
 def delete_host_instance(cluster):
     mister_cluster = MisterClusterImplementation()
-    result = mister_cluster.delete_node_from_cluster(cluster)
+    cluster_slaves = filter(lambda n: not n.is_master, list(cluster.host_set.all()))
+    result = mister_cluster.resize_cluster(cluster, new_size=len(cluster_slaves)-1)
     return result
 
 
@@ -167,9 +169,8 @@ class HostViewSet(viewsets.ModelViewSet):
 
         cluster_candidates = Cluster.objects.filter(id=data2["cluster_id"])
         if len(cluster_candidates) > 0:
-            mister_cluster = MisterClusterImplementation()
-            host = mister_cluster.resize_cluster(cluster_candidates[0],
-                                                 len(list(cluster_candidates[0].host_set.iterator())) + 1)
+            cluster = cluster_candidates[0]
+            host = add_host(cluster)
 
         return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
 

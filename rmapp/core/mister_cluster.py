@@ -85,6 +85,9 @@ class MisterClusterInterface(object):
     def delete_node_from_cluster(self, cluster):
         raise not NotImplemented
 
+    def delete_cluster(self, cluster):
+        raise not NotImplemented
+
 
 class MisterClusterHeat(MisterClusterInterface):
 
@@ -257,14 +260,24 @@ class MisterClusterHeat(MisterClusterInterface):
                 slave_host = Host()
                 slave_host.name = slave_resource.resource_name
                 slave_host.cluster_id = cluster.id
-                slave_host.is_master = True
+                slave_host.is_master = False
                 slave_host.save()
                 last_slave = slave_host
 
         return last_slave
 
-    def delete_node_from_cluster(self, cluster):
-        raise not NotImplemented
+    def delete_cluster(self, cluster):
+        logging.info("Starting the resize of the cluster <%s>" % (cluster.id))
+
+        full_credentials = cluster.get_full_credentials()
+        if full_credentials is None:
+            # TODO: Fail more gracefully
+            raise Exception("No credentials for the selected site!")
+        heat_client = get_heatclient_from_credentials(full_credentials)
+
+        heatclient.stacks.delete(cluster.name)
+
+        return None
 
 
 # class MisterClusterNova(MisterClusterInterface):
