@@ -1,18 +1,15 @@
 #!/usr/bin/env python
 
+import heatclient
+import yaml
+from common_dibbs.misc import configure_basic_authentication
 from novaclient.v2 import client
 
-from rmapp.conf import config
 from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
-from scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
-import novaclient.exceptions as NovaExceptions
-from settings import Settings
-from common_dibbs.misc import configure_basic_authentication
-import yaml
-from heatclient.common import template_utils
 from rmapp.models import Host
-import heatclient
+from scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
+from settings import Settings
 
 logging.basicConfig(level=logging.INFO)
 
@@ -264,6 +261,9 @@ class MisterClusterHeat(MisterClusterInterface):
                 slave_host.save()
                 last_slave = slave_host
 
+            cluster.current_slaves_count = new_size
+            cluster.save()
+
         return last_slave
 
     def delete_cluster(self, cluster):
@@ -273,9 +273,9 @@ class MisterClusterHeat(MisterClusterInterface):
         if full_credentials is None:
             # TODO: Fail more gracefully
             raise Exception("No credentials for the selected site!")
-        heat_client = get_heatclient_from_credentials(full_credentials)
 
-        heatclient.stacks.delete(cluster.name)
+        hc = get_heatclient_from_credentials(full_credentials)
+        hc.stacks.delete(cluster.name)
 
         return None
 

@@ -91,7 +91,11 @@ class ClusterViewSet(viewsets.ModelViewSet):
                 for host in cluster.host_set.all():
                     host.delete()
                 mister_cluster = MisterClusterImplementation()
-                mister_cluster.delete_cluster(cluster)
+                try:
+                    mister_cluster.delete_cluster(cluster)
+                except:
+                    logging.error("an error occured while deleting resources of cluster %s. It seems that this cluster was non functional." % (cluster.id))
+                    pass
 
         # clusters = Cluster.objects.all()
         # serializer = ClusterSerializer(clusters)
@@ -130,6 +134,38 @@ class ClusterViewSet(viewsets.ModelViewSet):
         }
         return Response(response, status=201)
 
+    @detail_route(methods=['post'])
+    def add_host(self, request, pk):
+        """
+        Add a new host on an existing cluster.
+        """
+
+        clusters = Cluster.objects.filter(id=pk).all()
+        if len(clusters) == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        cluster = clusters[0]
+
+        add_host(cluster)
+
+        serializer = ClusterSerializer(cluster)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @detail_route(methods=['post'])
+    def remove_host(self, request, pk):
+        """
+        Remove an host from an existing cluster.
+        """
+
+        clusters = Cluster.objects.filter(id=pk).all()
+        if len(clusters) == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        cluster = clusters[0]
+
+        remove_host(cluster)
+
+        serializer = ClusterSerializer(cluster)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 ##############################
 # Host management
@@ -137,15 +173,17 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
 def add_host(cluster):
     mister_cluster = MisterClusterImplementation()
-    cluster_slaves = filter(lambda n: not n.is_master, list(cluster.host_set.all()))
-    result = mister_cluster.resize_cluster(cluster, new_size=len(cluster_slaves)+1)
+    cluster.targeted_slaves_count += 1
+    cluster.save()
+    result = mister_cluster.resize_cluster(cluster, new_size=cluster.targeted_slaves_count)
     return result
 
 
-def delete_host_instance(cluster):
+def remove_host(cluster):
     mister_cluster = MisterClusterImplementation()
-    cluster_slaves = filter(lambda n: not n.is_master, list(cluster.host_set.all()))
-    result = mister_cluster.resize_cluster(cluster, new_size=len(cluster_slaves)-1)
+    cluster.targeted_slaves_count -= 1
+    cluster.save()
+    result = mister_cluster.resize_cluster(cluster, new_size=cluster.targeted_slaves_count)
     return result
 
 
@@ -180,7 +218,7 @@ class HostViewSet(viewsets.ModelViewSet):
             candidates = Host.objects.filter(id=host_id)
             if len(candidates) > 0:
                 host = candidates[0]
-                result = delete_host_instance(host)
+                result = remove_host(host)
                 if not result:
                     raise Exception("Could not delete instance associated to host %s" % (host_id))
 

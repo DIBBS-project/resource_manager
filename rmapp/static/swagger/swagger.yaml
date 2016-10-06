@@ -188,6 +188,62 @@ paths:
           schema:
             $ref: '#/definitions/Error'
 
+  /clusters/{id}/add_host/:
+    post:
+      summary: Add a host to the specified cluster.
+      description: |
+        Add a host to the specified cluster.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Cluster definitions
+      responses:
+        201:
+          description: The cluster matching the given Id
+          schema:
+            $ref: '#/definitions/Cluster'
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
+  /clusters/{id}/remove_host/:
+    post:
+      summary: Remove a host from the specified cluster.
+      description: |
+        Remove a host from the specified cluster.
+      parameters:
+        - name: id
+          in: path
+          description: Id of the cluster
+          required: true
+          type: integer
+          minimum: 0
+      tags:
+        - Cluster definitions
+      responses:
+        201:
+          description: The cluster matching the given Id
+          schema:
+            $ref: '#/definitions/Cluster'
+        404:
+          description: No cluster definition with the given Id
+          schema:
+            $ref: '#/definitions/Error'
+        default:
+          description: Unexpected error
+          schema:
+            $ref: '#/definitions/Error'
+
   /hosts/:
     get:
       summary: Get the list of all the Host definitions registered.
@@ -741,6 +797,12 @@ definitions:
         description: IDs of nodes of the cluster (can be null)
         items:
           type: string
+      targeted_slaves_count:
+        type: integer
+        description: targeted number of slaves in the cluster
+      current_slaves_count:
+        type: integer
+        description: current number of slaves in the cluster
       hosts_ips:
         type: array
         description: IP addresses of nodes of the cluster (can be null)
