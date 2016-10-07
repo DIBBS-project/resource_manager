@@ -61,7 +61,7 @@ def get_heatclient_from_credentials(full_credentials):
 
 def get_novaclient_from_credentials(full_credentials):
     import novaclient
-    assert full_credentials[u'site'].type == 'openstack'
+    # assert full_credentials[u'site'].type == 'openstack'
     os_auth_url = full_credentials[u'site'].contact_url
     credentials = full_credentials[u'credentials']
     username = credentials[u'username']
@@ -173,6 +173,13 @@ class MisterClusterHeat(MisterClusterInterface):
             "infrastructure_type": full_credentials[u'site'].type
         }
         template_str = generate_script_from_appliance_registry(appliance_impl_name, "heat_template", prepare_node_path, jinja_variables)
+        nc = get_novaclient_from_credentials(full_credentials)
+
+        networks = filter(lambda n: n.label != "ext-net", nc.networks.list())
+        network_name = networks[0].label
+
+        flavors = nc.flavors.list()
+        flavor_name = flavors[0].name
 
         heat_environment = {
             "parameters": {
@@ -180,12 +187,12 @@ class MisterClusterHeat(MisterClusterInterface):
                 "image_name": "CENTOS-7-HADOOP",
                 "key_name": "MySshKey",
                 "user_name": "root",
-                "flavor_name": "standard",
-                "network_name": "DIBBs-net",
+                "flavor_name": flavor_name,
+                "network_name": network_name,
             }
         }
         if full_credentials[u'site'].type == "baremetal":
-            heat_environment["reservation_id"] = "770b99b7-35c8-4490-8384-a81f3412d7f7"
+            heat_environment["parameters"]["reservation_id"] = eval(cluster.hints)["lease_id"]
 
         template_as_dict = yaml.load(template_str)
         if "heat_template_version" in template_as_dict and type(template_as_dict["heat_template_version"]) is not str:
