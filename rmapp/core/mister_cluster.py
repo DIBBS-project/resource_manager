@@ -240,7 +240,11 @@ class MisterClusterHeat(MisterClusterInterface):
                 stack_resources = heat_client.resources.list(**fields)
                 resource_group = filter(lambda r: "ResourceGroup" in r.resource_type, stack_resources)[0]
             master_resource = filter(lambda r: "Server" in r.resource_type, stack_resources)[0]
-            slave_resources = heat_client.resources.list(heat_client.stacks.get(resource_group.physical_resource_id).id)
+            # slave_resources = heat_client.resources.list(heat_client.stacks.get(resource_group.physical_resource_id).id)
+            slave_resources = []
+            if new_size > 0:
+                while len(slave_resources) == 0:
+                    slave_resources = heat_client.resources.list(heat_client.stacks.get(resource_group.physical_resource_id).id)
 
             nova_client = get_novaclient_from_credentials(full_credentials)
 
