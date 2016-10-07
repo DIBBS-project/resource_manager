@@ -42,6 +42,9 @@ class Cluster(models.Model):
     hints = models.CharField(max_length=100, blank=True, default='{}')
     credential = models.CharField(max_length=100, blank=True, default='')
 
+    targeted_slaves_count = models.IntegerField(default=0)
+    current_slaves_count = models.IntegerField(default=0)
+
     # Relationships
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)

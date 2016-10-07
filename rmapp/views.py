@@ -12,14 +12,19 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import detail_route
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
+import time
+import urllib3.exceptions
 
-from rmapp.core.mister_cluster import MisterCluster
+from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
+# from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
+
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 from settings import Settings
 # import the logging library
 import logging
 from common_dibbs.misc import configure_basic_authentication
+import uuid
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -66,12 +71,12 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster = Cluster()
         cluster.appliance = appliance.name
         cluster.user_id = request.user.id
-        cluster.name = data2["name"]
+        cluster.name = "%s_%s" % (appliance.name, uuid.uuid4())
         cluster.hints = data2["hints"]
         cluster.save()
 
-        mister_cluster = MisterCluster()
-        mister_cluster.generate_clusters_keypairs(cluster)
+        # mister_cluster = MisterClusterImplementation()
+        # mister_cluster.generate_clusters_keypairs(cluster)
 
         serializer = ClusterSerializer(cluster)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -84,9 +89,13 @@ class ClusterViewSet(viewsets.ModelViewSet):
                 cluster = candidates[0]
                 # Remove all cluster's host
                 for host in cluster.host_set.all():
-                    result = delete_host_instance(host)
-                    if result:
-                        host.delete()
+                    host.delete()
+                mister_cluster = MisterClusterImplementation()
+                try:
+                    mister_cluster.delete_cluster(cluster)
+                except:
+                    logging.error("an error occured while deleting resources of cluster %s. It seems that this cluster was non functional." % (cluster.id))
+                    pass
 
         # clusters = Cluster.objects.all()
         # serializer = ClusterSerializer(clusters)
@@ -110,7 +119,14 @@ class ClusterViewSet(viewsets.ModelViewSet):
         actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
         configure_basic_authentication(actions_api, "admin", "pass")
 
-        result = actions_api.new_account_post()
+        try_account_creation = True
+        while try_account_creation:
+            try:
+                result = actions_api.new_account_post()
+                try_account_creation = False
+            except:
+                logging.info("service located at 'http://%s:8012' does not seem to be ready, waiting 2 seconds before retrying to contact it" % (master_node_ip,))
+                time.sleep(2)
 
         response = {
             "username": result.username,
@@ -118,20 +134,56 @@ class ClusterViewSet(viewsets.ModelViewSet):
         }
         return Response(response, status=201)
 
+    @detail_route(methods=['post'])
+    def add_host(self, request, pk):
+        """
+        Add a new host on an existing cluster.
+        """
+
+        clusters = Cluster.objects.filter(id=pk).all()
+        if len(clusters) == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        cluster = clusters[0]
+
+        add_host(cluster)
+
+        serializer = ClusterSerializer(cluster)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    @detail_route(methods=['post'])
+    def remove_host(self, request, pk):
+        """
+        Remove an host from an existing cluster.
+        """
+
+        clusters = Cluster.objects.filter(id=pk).all()
+        if len(clusters) == 0:
+            return Response({}, status=status.HTTP_404_NOT_FOUND)
+        cluster = clusters[0]
+
+        remove_host(cluster)
+
+        serializer = ClusterSerializer(cluster)
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 ##############################
 # Host management
 ##############################
 
-def add_host(host):
-    mister_cluster = MisterCluster()
-    result = mister_cluster.add_node_to_cluster(host)
+def add_host(cluster):
+    mister_cluster = MisterClusterImplementation()
+    cluster.targeted_slaves_count += 1
+    cluster.save()
+    result = mister_cluster.resize_cluster(cluster, new_size=cluster.targeted_slaves_count)
     return result
 
 
-def delete_host_instance(host):
-    mister_cluster = MisterCluster()
-    result = mister_cluster.delete_node_from_cluster(host)
+def remove_host(cluster):
+    mister_cluster = MisterClusterImplementation()
+    cluster.targeted_slaves_count -= 1
+    cluster.save()
+    result = mister_cluster.resize_cluster(cluster, new_size=cluster.targeted_slaves_count)
     return result
 
 
@@ -153,13 +205,11 @@ class HostViewSet(viewsets.ModelViewSet):
             data2[key] = data[key]
         data2[u'user'] = request.user.id
 
-        host = Host()
-        for field in data2:
-            setattr(host, field, data2[field])
-        host.save()
+        cluster_candidates = Cluster.objects.filter(id=data2["cluster_id"])
+        if len(cluster_candidates) > 0:
+            cluster = cluster_candidates[0]
+            host = add_host(cluster)
 
-        if not ("action" in data and data["action"] == "nodeploy"):
-            add_host(host)
         return Response({"host_id": host.id}, status=status.HTTP_201_CREATED)
 
     def destroy(self, request, *args, **kwargs):
@@ -168,7 +218,7 @@ class HostViewSet(viewsets.ModelViewSet):
             candidates = Host.objects.filter(id=host_id)
             if len(candidates) > 0:
                 host = candidates[0]
-                result = delete_host_instance(host)
+                result = remove_host(host)
                 if not result:
                     raise Exception("Could not delete instance associated to host %s" % (host_id))
 
