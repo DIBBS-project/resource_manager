@@ -251,7 +251,9 @@ class MisterClusterHeat(MisterClusterInterface):
             # Create a host for the master node
             master_host = Host()
             master_instance = nova_client.servers.find(id=master_resource.physical_resource_id)
-            floating_ips = sum(map(lambda net: filter(lambda addr: addr["OS-EXT-IPS:type"]=="floating", master_instance.addresses[net]), master_instance.addresses), [])
+            floating_ips = []
+            while len(floating_ips) == 0:
+                floating_ips = sum(map(lambda net: filter(lambda addr: addr["OS-EXT-IPS:type"]=="floating", master_instance.addresses[net]), master_instance.addresses), [])
             master_host.name = master_resource.resource_name
             master_host.instance_ip = floating_ips[0]["addr"]
             master_host.cluster_id = cluster.id
