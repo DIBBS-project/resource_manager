@@ -25,6 +25,8 @@ class Migration(migrations.Migration):
                 ('status', models.CharField(default=b'IDLE', max_length=100, blank=True)),
                 ('hints', models.CharField(default=b'{}', max_length=100, blank=True)),
                 ('credential', models.CharField(default=b'', max_length=100, blank=True)),
+                ('targeted_slaves_count', models.IntegerField(default=0)),
+                ('current_slaves_count', models.IntegerField(default=0)),
                 ('appliance', models.CharField(max_length=100)),
                 ('appliance_impl', models.CharField(max_length=100, blank=True)),
                 ('common_appliance_impl', models.CharField(max_length=100, blank=True)),
