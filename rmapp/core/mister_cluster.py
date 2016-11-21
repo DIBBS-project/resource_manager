@@ -161,7 +161,7 @@ class MisterClusterHeat(MisterClusterInterface):
             cluster_db_object.status = "Adding a slave node"
         cluster_db_object.save()
 
-        tmp_folder = "tmp/cluster_%s" % (cluster_db_object.uuid)
+        tmp_folder = "/tmp/cluster_%s" % (cluster_db_object.uuid)
 
         if not os.path.exists(tmp_folder):
             os.makedirs(tmp_folder)
@@ -173,14 +173,18 @@ class MisterClusterHeat(MisterClusterInterface):
             "infrastructure_type": full_credentials[u'site'].type
         }
         template_str = generate_script_from_appliance_registry(appliance_impl_name, "heat_template", prepare_node_path, jinja_variables)
-        nc = get_novaclient_from_credentials(full_credentials)
+        logging.info("Heat template has been generated")
 
+        nc = get_novaclient_from_credentials(full_credentials)
         networks = filter(lambda n: n.label != "ext-net", nc.networks.list())
         network_name = networks[0].label
+        logging.info("Found the network to use: %s" % (network_name))
 
         flavors = nc.flavors.list()
         flavor_name = flavors[0].name
+        logging.info("Found the flavor to use: %s" % (flavor_name))
 
+        logging.info("Preparing the creation of a new Heat stack")
         heat_environment = {
             "parameters": {
                 "cluster_size": new_size,
@@ -218,6 +222,7 @@ class MisterClusterHeat(MisterClusterInterface):
                 "environment": heat_environment
             }
             # The stack already exist, we only need to update it
+            logging.info("An existing Heat stack has been detected, I will only update it")
 
             continue_to_wait = True
             while continue_to_wait:
@@ -226,6 +231,7 @@ class MisterClusterHeat(MisterClusterInterface):
                     heat_client.stacks.update(**heat_template_data)
                 except Exception as e:
                     continue_to_wait = all(map(lambda s: s in e.message, ["has an action", "in progress"]))
+                    logging.info("Heat conflict detected, waiting 2 more seconds")
                     time.sleep(2)
             stack_id = cluster.name
 
