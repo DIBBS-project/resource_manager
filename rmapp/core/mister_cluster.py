@@ -176,7 +176,15 @@ class MisterClusterHeat(MisterClusterInterface):
         logging.info("Heat template has been generated")
 
         nc = get_novaclient_from_credentials(full_credentials)
+        logging.info("Created a nova client object")
+
         networks = filter(lambda n: n.label != "ext-net", nc.networks.list())
+        logging.info("Found the available networks: %s" % (networks))
+
+        if len(networks) == 0:
+            logging.error("No network found :(")
+            raise Exception("No network found :(")
+
         network_name = networks[0].label
         logging.info("Found the network to use: %s" % (network_name))
 
