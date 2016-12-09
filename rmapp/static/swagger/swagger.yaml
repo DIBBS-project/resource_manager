@@ -829,6 +829,7 @@ definitions:
     required:
       - name
       - appliance
+      - targeted_slaves_count
     properties:
       name:
         description: Name given to the cluster
@@ -836,6 +837,9 @@ definitions:
       appliance:
         type: string
         description: Appliance of the cluster
+      targeted_slaves_count:
+        type: integer
+        description: Number of slaves in the cluster
 
   hosts:
     type: object
