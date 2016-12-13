@@ -1,0 +1,12 @@
+digraph finite_state_machine {
+	rankdir=TB;
+	size="3,8"
+	node [shape = doublecircle]; Finished Error;
+	node [shape = circle];
+	Initiated -> Deployed [ label = "Deploying" ];
+	Deployed -> Bootstrapped [ label = "Bootstrapping" ];
+	Bootstrapped -> Configured [ label = "Configuring" ];
+	Configured -> Executed [ label = "Executing" ];
+	Executed -> Collected [ label = "Collecting" ];
+	Collected -> Finished [ label = "Finishing" ];
+}a
