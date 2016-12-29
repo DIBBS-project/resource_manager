@@ -197,7 +197,6 @@ class MisterClusterHeat(MisterClusterInterface):
             "parameters": {
                 "cluster_size": new_size,
                 "image_name": "CENTOS-7-HADOOP",
-                "key_name": "MySshKey",
                 "user_name": "root",
                 "flavor_name": flavor_name,
                 "network_name": network_name,
