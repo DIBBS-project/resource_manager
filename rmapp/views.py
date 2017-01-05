@@ -73,10 +73,13 @@ class ClusterViewSet(viewsets.ModelViewSet):
         cluster.user_id = request.user.id
         cluster.name = "%s_%s" % (appliance.name, uuid.uuid4())
         cluster.hints = data2["hints"]
+        if "targeted_slaves_count" in data2:
+            cluster.targeted_slaves_count = data2["targeted_slaves_count"]
         cluster.save()
 
-        # mister_cluster = MisterClusterImplementation()
-        # mister_cluster.generate_clusters_keypairs(cluster)
+        if cluster.targeted_slaves_count > 0:
+            mister_cluster = MisterClusterImplementation()
+            mister_cluster.resize_cluster(cluster, new_size=cluster.targeted_slaves_count)
 
         serializer = ClusterSerializer(cluster)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
@@ -110,7 +113,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
         clusters = Cluster.objects.filter(id=pk).all()
         if len(clusters) == 0:
-            return Response({}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "Could not find a cluster with id=%s" % (pk)}, status=status.HTTP_404_NOT_FOUND)
         cluster = clusters[0]
 
         master_node_ip = cluster.get_master_node().instance_ip
@@ -119,14 +122,11 @@ class ClusterViewSet(viewsets.ModelViewSet):
         actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
         configure_basic_authentication(actions_api, "admin", "pass")
 
-        try_account_creation = True
-        while try_account_creation:
-            try:
-                result = actions_api.new_account_post()
-                try_account_creation = False
-            except:
-                logging.info("service located at 'http://%s:8012' does not seem to be ready, waiting 2 seconds before retrying to contact it" % (master_node_ip,))
-                time.sleep(2)
+        try:
+            result = actions_api.new_account_post()
+        except Exception:
+            logging.info("service located at 'http://%s:8012' does not seem to be ready, waiting 5 seconds before retrying to contact it" % (master_node_ip,))
+            return Response({"detail": "The cluster is not ready yet"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
 
         response = {
             "username": result.username,
