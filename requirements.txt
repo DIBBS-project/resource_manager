@@ -1,21 +1,19 @@
-django>=1.8.0
-djangorestframework
-markdown
+certifi>=14.05.14
+common-dibbs
+django>=1.8,<1.9
 django-filter
-jinja2
-python-novaclient
-python-heatclient
 django-secure
 django-sslserver
-paramiko
-common-dibbs
-
-pycrypto
+djangorestframework>=3.5,<3.6
+jinja2
 keystoneauth1
+markdown
+paramiko
+pycrypto
+python_dateutil>=2.5.3
+python-heatclient
 python-keystoneclient
-
-certifi >= 14.05.14
-six == 1.8.0
-python_dateutil >= 2.5.3
-setuptools >= 21.0.0
-urllib3 >= 1.15.1
+python-novaclient
+six>=1.8.0
+setuptools>=21.0.0
+urllib3>=1.15.1
