@@ -3,6 +3,7 @@
 import heatclient
 import yaml
 from common_dibbs.misc import configure_basic_authentication
+from novaclient.v2 import client
 
 from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
@@ -59,14 +60,14 @@ def get_heatclient_from_credentials(full_credentials):
 
 
 def get_novaclient_from_credentials(full_credentials):
-    from novaclient import client
+    import novaclient
     # assert full_credentials[u'site'].type == 'openstack'
     os_auth_url = full_credentials[u'site'].contact_url
     credentials = full_credentials[u'credentials']
     username = credentials[u'username']
     password = credentials[u'password']
     project = credentials[u'project']
-    novaclient = client.Client('2', username, password, project, os_auth_url)
+    novaclient = novaclient.v2.client.Client(username, password, project, os_auth_url)
     return novaclient
 
 
