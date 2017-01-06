@@ -154,7 +154,14 @@ class MisterClusterHeat(MisterClusterInterface):
             raise Exception("No credentials for the selected site!")
         heat_client = get_heatclient_from_credentials(full_credentials)
 
-        is_master = cluster_db_object.get_master_node() is None
+        #is_master = cluster_db_object.get_master_node() is None
+        try:
+            cluster_db_object.master_node
+        except Host.DoesNotExist:
+            is_master = False
+        else:
+            is_master = True
+
         if is_master:
             cluster_db_object.status = "Adding master node"
         else:

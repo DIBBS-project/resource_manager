@@ -1,14 +1,18 @@
 #!/usr/bin/env python
 
+import logging
 from subprocess import check_output
 
 from rmapp.lib.common import *
+
+logger = logging.getLogger(__name__)
 
 
 class Authenticator(object):
 
     def generate_public_certification(self, tmp_folder):
 
+        logging.warning('SECURITY: executing shell commands from user input')
         variables = {"tmp_folder": tmp_folder}
         output_file = "%s/generate_certificate" % (tmp_folder)
         generate_template("authenticator/generate_certificate.jinja2", variables)
@@ -19,6 +23,7 @@ class Authenticator(object):
 
     def decrypt_password(self, tmp_folder):
 
+        logging.warning('SECURITY: executing shell commands from user input')
         variables = {"tmp_folder": tmp_folder}
         generate_template("authenticator/decrypt_password.jinja2", variables)
         output_file = "%s/decrypt_password" % (tmp_folder)

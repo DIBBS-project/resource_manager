@@ -1,9 +1,13 @@
-#!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import logging
+import uuid
+import time
+import json
 
-import django.contrib.auth
 from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
 from common_dibbs.clients.rpa_client.apis import ActionsApi
+from common_dibbs.misc import configure_basic_authentication
+import django.contrib.auth
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -12,19 +16,13 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import detail_route
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
-import time
 import urllib3.exceptions
 
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
-
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 from settings import Settings
-# import the logging library
-import logging
-from common_dibbs.misc import configure_basic_authentication
-import uuid
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -110,13 +108,23 @@ class ClusterViewSet(viewsets.ModelViewSet):
         """
         Create a new temporary user account on an existing cluster.
         """
+        try:
+            cluster = Cluster.objects.get(id=pk)
+        except Cluster.DoesNotExist:
+            return Response(
+                {"detail": "Could not find a cluster with id ''".format(pk)},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
-        clusters = Cluster.objects.filter(id=pk).all()
-        if len(clusters) == 0:
-            return Response({"detail": "Could not find a cluster with id=%s" % (pk)}, status=status.HTTP_404_NOT_FOUND)
-        cluster = clusters[0]
+        try:
+            user_creds = json.loads(cluster.the_new_user)
+        except ValueError:
+            logger.warning('corrupt JSON in cluster.the_new_user')
+        else:
+            if user_creds:
+                return Response(user_creds)
 
-        master_node_ip = cluster.get_master_node().instance_ip
+        master_node_ip = cluster.master_node.instance_ip
 
         actions_api = ActionsApi()
         actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
@@ -132,6 +140,8 @@ class ClusterViewSet(viewsets.ModelViewSet):
             "username": result.username,
             "password": result.password
         }
+        cluster.the_new_user = json.dumps(response)
+        cluster.save()
         return Response(response, status=201)
 
     @detail_route(methods=['post'])
@@ -312,33 +322,6 @@ def rsa_public_key(request, user_id):
     except:
         return Response({"error": "Cannot find user %s" % user_id}, status=404)
     return Response({"public_key": public_key_str})
-
-
-@api_view(['POST'])
-@csrf_exempt
-def new_account(request, pk):
-    """
-    Create a new temporary user account on an existing cluster.
-    """
-
-    clusters = Cluster.objects.filter(id=pk).all()
-    if len(clusters) == 0:
-        return Response({}, status=status.HTTP_404_NOT_FOUND)
-    cluster = clusters[0]
-
-    master_node_ip = cluster.get_master_node().instance_ip
-
-    actions_api = ActionsApi()
-    actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
-    configure_basic_authentication(actions_api, "admin", "pass")
-
-    result = actions_api.new_account_post()
-
-    response = {
-        "username": result.username,
-        "password": result.password
-    }
-    return Response(response, status=201)
 
 
 def get_certificate(request, pk):

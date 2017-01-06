@@ -45,15 +45,18 @@ class Cluster(models.Model):
     targeted_slaves_count = models.IntegerField(default=0)
     current_slaves_count = models.IntegerField(default=0)
 
+    # HACK: new_account now only generates one user. unclear why/what the single account should relate to.
+    the_new_user = models.CharField(max_length=250, default='{}')
+
     # Relationships
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
     appliance_impl = models.CharField(max_length=100, blank=True)
     common_appliance_impl = models.CharField(max_length=100, blank=True)
 
-    def get_master_node(self):
-        candidates = Host.objects.filter(cluster_id=self.id).filter(is_master=True)
-        return candidates[0] if len(candidates) > 0 else None
+    @property
+    def master_node(self):
+        return Host.objects.get(cluster_id=self.id, is_master=True)
 
     def get_full_credentials(self):
         from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
@@ -84,8 +87,6 @@ class Cluster(models.Model):
                 }
                 break
         return full_credentials
-
-    # def user(self):
 
 
 class Host(models.Model):
