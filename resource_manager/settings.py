@@ -1,3 +1,4 @@
+# coding: utf-8
 """
 Django settings for resource_manager project.
 
@@ -9,6 +10,7 @@ https://docs.djangoproject.com/en/1.9/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/1.9/ref/settings/
 """
+from __future__ import absolute_import, print_function
 
 import os
 
@@ -37,7 +39,6 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'djangosecure',
     'sslserver',
     'rest_framework',
     'rest_framework.authtoken',
@@ -150,5 +151,18 @@ LOGGING = {
             'propagate': True,
             'level':'DEBUG',
         }
+    },
+}
+
+# FIXME: load this from some file that can be distributed across services
+DIBBS = {
+    'urls': {
+        'cas': 'http://127.0.0.1:7000',
+        'or': "http://127.0.0.1:8000",
+        'om': "http://127.0.0.1:8001",
+        'rm': "http://127.0.0.1:8002",
+        'ar': "http://127.0.0.1:8003",
+        # 'oma': "http://127.0.0.1:8011",
+        # 'rma': "http://127.0.0.1:8012",
     },
 }

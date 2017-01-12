@@ -1,12 +1,15 @@
-#!/usr/bin/env python
+# coding: utf-8
+from __future__ import absolute_import, print_function
 
 import logging
 import os
 import sys
 import time
-import paramiko
+
+from django.conf import settings
 from jinja2 import Environment, FileSystemLoader, Template
-from settings import Settings
+import paramiko
+
 from common_dibbs.misc import configure_basic_authentication
 
 logging.basicConfig(level=logging.INFO)
@@ -51,12 +54,12 @@ def get_template_from_appliance_registry(appliance_impl_name, action_name):
 
     # Create a client for Scripts
     scripts_client = ScriptsApi()
-    scripts_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+    scripts_client.api_client.host = settings.DIBBS['urls']['ar']
     configure_basic_authentication(scripts_client, "admin", "pass")
 
     script = scripts_client.scripts_appliance_action_get(appliance_impl_name, action_name)
     # TODO fix
-    print (script)
+    print(script)
     return script.code
 
 
@@ -117,9 +120,9 @@ def execute_ssh_cmd(ssh_connection, command):
     stdin, stdout, stderr = ssh_connection.exec_command(command+" 2>&1")
     for line in stdout:
         # Do stuff with line
-        # print line
+        # print(line)
         sys.stdout.write(line)
-    # print stdout.readlines()
+    # print(stdout.readlines())
     return True
 
 

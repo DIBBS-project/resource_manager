@@ -1,7 +1,12 @@
-from rest_framework import exceptions
-from rmapp.models import Token
+# coding: utf-8
+from __future__ import absolute_import, print_function
 
 from functools import wraps
+
+import django.contrib.auth
+from rest_framework import exceptions
+
+from rmapp.models import Token
 
 
 def expect_username(view_func):
@@ -108,7 +113,6 @@ def user_authentication(view_func):
             raise exceptions.AuthenticationFailed('need a username and a password :(')
         username = request.username
         password = request.password
-        import django.contrib.auth
         users = django.contrib.auth.get_user_model().objects.filter(username=username).all()
         if len(users) == 0:
             raise exceptions.AuthenticationFailed('user not valid :(')

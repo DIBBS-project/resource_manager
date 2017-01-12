@@ -1,15 +1,19 @@
-#!/usr/bin/env python
+# coding: utf-8
+from __future__ import absolute_import, print_function
 
+import logging
+
+from django.conf import settings
 import heatclient
-import yaml
-from common_dibbs.misc import configure_basic_authentication
 from novaclient.v2 import client
+import yaml
+
+from common_dibbs.misc import configure_basic_authentication
 
 from rmapp.core.authenticator import Authenticator
 from rmapp.lib.common import *
 from rmapp.models import Host
-from scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
-from settings import Settings
+from .scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
 
 logging.basicConfig(level=logging.INFO)
 
@@ -101,17 +105,17 @@ class MisterClusterHeat(MisterClusterInterface):
 
         # Create a client for Appliances
         appliances_client = AppliancesApi()
-        appliances_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        appliances_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(appliances_client, "admin", "pass")
 
         # Create a client for ApplianceImplementations
         appliance_implementations_client = ApplianceImplementationsApi()
-        appliance_implementations_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        appliance_implementations_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(appliance_implementations_client, "admin", "pass")
 
         # Create a client for Sites
         sites_client = SitesApi()
-        sites_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        sites_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(sites_client, "admin", "pass")
 
         appliance = appliances_client.appliances_name_get(cluster_db_object.appliance)

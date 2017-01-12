@@ -1,22 +1,23 @@
-from models import Profile
-from Crypto.PublicKey import RSA
-from base64 import b64decode, b64encode
+# coding: utf-8
+from __future__ import absolute_import, print_function
+
+import base64
 import json
 
+from Crypto.PublicKey import RSA
 
-def decrypt_credentials(encrypted_credentials, user_id):
+
+def decrypt_credentials(encrypted_credentials, profile):
     # Use the private key de temporarily decrypt and check that it gives JSON
-    profile = Profile.objects.get(user_id=user_id)
     key = RSA.importKey(profile.rsa_key)
 
-    to_decrypt = b64decode(encrypted_credentials)
+    to_decrypt = base64.b64decode(encrypted_credentials)
     decrypted_credentials = key.decrypt(to_decrypt)
 
     # Temporary fix
     # TODO: Understand why there are additional characters at the beginning and fix this hack
-    import string
-    pos = string.rfind(decrypted_credentials, '{')
+    pos = decrypted_credentials.rfind('{')
     print(pos)
-    decrypted_credentials = decrypted_credentials[string.rfind(decrypted_credentials, '{'):]
+    decrypted_credentials = decrypted_credentials[decrypted_credentials.rfind('{'):]
     decrypted_credentials = json.loads(decrypted_credentials)
     return decrypted_credentials

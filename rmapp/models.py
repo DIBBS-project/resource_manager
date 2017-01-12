@@ -1,22 +1,22 @@
-from django.db import models
-from django.contrib.auth.models import User
+# coding: utf-8
+from __future__ import absolute_import, print_function
+
+import uuid
+
 from Crypto.PublicKey import RSA
-
-
 from django.conf import settings
+from django.contrib import auth
+from django.contrib.auth.models import User
+from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
-from django.contrib import auth
 from rest_framework.authtoken.models import Token
-import uuid
-from settings import Settings
+
+from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
+from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
 from common_dibbs.misc import configure_basic_authentication
 
-# Create your models here.
-
-
-def generate_uuid():
-    return uuid.uuid4()
+from . import crypto
 
 
 class Credential(models.Model):
@@ -34,7 +34,7 @@ class Profile(models.Model):
 
 class Cluster(models.Model):
     name = models.CharField(max_length=100, blank=True, default='')
-    uuid = models.CharField(max_length=100, blank=False, default=generate_uuid)
+    uuid = models.CharField(max_length=100, blank=False, default=uuid.uuid4)
     private_key = models.TextField(max_length=1000, blank=True, default='')
     public_key = models.TextField(max_length=1000, blank=True, default='')
 
@@ -59,18 +59,14 @@ class Cluster(models.Model):
         return Host.objects.get(cluster_id=self.id, is_master=True)
 
     def get_full_credentials(self):
-        from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-        from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
-        import crypto
-
         # Create a client for ApplianceImplementations
         appliance_implementations_client = ApplianceImplementationsApi()
-        appliance_implementations_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        appliance_implementations_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(appliance_implementations_client, "admin", "pass")
 
         # Create a client for Sites
         sites_client = SitesApi()
-        sites_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        sites_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(sites_client, "admin", "pass")
 
         appl_impl = appliance_implementations_client.appliances_impl_name_get(name=str(self.appliance_impl))
@@ -80,10 +76,11 @@ class Cluster(models.Model):
         possible_credentials = user.credentials.all() if self.credential == "" else Credential.objects.filter(name=self.credential)
         for creds in possible_credentials:
             if creds.site_name == appl_impl.site:
+                profile = Profile.objects.get(user_id=self.user_id)
                 full_credentials = {
                     "site": sites_client.sites_name_get(name=creds.site_name),
                     "user": self.user,
-                    "credentials": crypto.decrypt_credentials(creds.credentials, user_id=self.user_id)
+                    "credentials": crypto.decrypt_credentials(creds.credentials, profile),
                 }
                 break
         return full_credentials

@@ -2,7 +2,6 @@ certifi>=14.05.14
 common-dibbs
 django>=1.8,<1.9
 django-filter
-django-secure
 django-sslserver
 djangorestframework>=3.5,<3.6
 jinja2

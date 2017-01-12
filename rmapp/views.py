@@ -1,13 +1,17 @@
-# -*- coding: utf-8 -*-
-import logging
-import uuid
-import time
+# coding: utf-8
+from __future__ import absolute_import, print_function
+
 import json
+import logging
+import time
+import uuid
 
 from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
 from common_dibbs.clients.rpa_client.apis import ActionsApi
 from common_dibbs.misc import configure_basic_authentication
-import django.contrib.auth
+
+from django.conf import settings
+from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
@@ -22,7 +26,6 @@ from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplemen
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
 from rmapp.models import Cluster, Host, Profile, Credential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
-from settings import Settings
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -57,7 +60,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
         # Create a client for Appliances
         appliances_client = AppliancesApi()
-        appliances_client.api_client.host = "%s" % (Settings().appliance_registry_url,)
+        appliances_client.api_client.host = settings.DIBBS['urls']['ar']
         configure_basic_authentication(appliances_client, "admin", "pass")
 
         # Retrieve site information with the Appliance Registry API (check for existence)
@@ -285,7 +288,7 @@ class UserViewSet(viewsets.ModelViewSet):
     This viewset automatically provides `list`, `create`, `retrieve`,
     `update` and `destroy` actions.
     """
-    queryset = django.contrib.auth.get_user_model().objects.all()
+    queryset = get_user_model().objects.all()
     serializer_class = UserSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
 
@@ -325,7 +328,7 @@ def rsa_public_key(request, user_id):
 
 
 def get_certificate(request, pk):
-    user = django.contrib.auth.get_user_model().objects.filter(id=pk)
+    user = get_user_model().objects.filter(id=pk)
     if user:
         tmp_folder = "tmp/%s" % user[0].username
         from rmapp.core.authenticator import Authenticator
