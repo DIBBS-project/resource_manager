@@ -12,11 +12,11 @@ from django.db.models.signals import post_save
 from django.dispatch import receiver
 from rest_framework.authtoken.models import Token
 
-from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
-from common_dibbs.misc import configure_basic_authentication
+from rmapp import crypto
+from rmapp import remote
 
-from . import crypto
+
+RSA_KEY_LENGTH = 2048
 
 
 class Credential(models.Model):
@@ -59,17 +59,7 @@ class Cluster(models.Model):
         return Host.objects.get(cluster_id=self.id, is_master=True)
 
     def get_full_credentials(self):
-        # Create a client for ApplianceImplementations
-        appliance_implementations_client = ApplianceImplementationsApi()
-        appliance_implementations_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(appliance_implementations_client, "admin", "pass")
-
-        # Create a client for Sites
-        sites_client = SitesApi()
-        sites_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(sites_client, "admin", "pass")
-
-        appl_impl = appliance_implementations_client.appliances_impl_name_get(name=str(self.appliance_impl))
+        appl_impl = remote.appliance_impl_name_get(str(self.appliance_impl))
 
         user = auth.get_user_model().objects.get(id=self.user_id)
         full_credentials = None
@@ -78,7 +68,7 @@ class Cluster(models.Model):
             if creds.site_name == appl_impl.site:
                 profile = Profile.objects.get(user_id=self.user_id)
                 full_credentials = {
-                    "site": sites_client.sites_name_get(name=creds.site_name),
+                    "site": remote.sites_name_get(creds.site_name),
                     "user": self.user,
                     "credentials": crypto.decrypt_credentials(creds.credentials, profile),
                 }
@@ -107,4 +97,4 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 @receiver(post_save, sender=settings.AUTH_USER_MODEL)
 def create_profile(sender, instance=None, created=False, **kwargs):
     if created:
-        Profile.objects.create(user=instance, rsa_key=RSA.generate(1024).exportKey())
+        Profile.objects.create(user=instance, rsa_key=RSA.generate(RSA_KEY_LENGTH).exportKey())

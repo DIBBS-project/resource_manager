@@ -10,12 +10,12 @@ import yaml
 
 from common_dibbs.misc import configure_basic_authentication
 
+from rmapp import remote
 from rmapp.core.authenticator import Authenticator
+from rmapp.core.scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
 from rmapp.lib.common import *
-from rmapp.models import Host
-from .scheduling_policies import SimpleSchedulingPolicy as SchedulingPolicy
+from rmapp.models import Cluster, Host
 
-logging.basicConfig(level=logging.INFO)
 
 authenticator = Authenticator()
 
@@ -93,35 +93,16 @@ class MisterClusterInterface(object):
 class MisterClusterHeat(MisterClusterInterface):
 
     def resize_cluster(self, cluster, new_size=1, master=None):
-        from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
-        from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
-        from common_dibbs.clients.ar_client.apis.sites_api import SitesApi
-        from rmapp.models import Cluster
         logging.info("Starting the resize of the cluster <%s>" % (cluster.id))
 
         cluster_db_object = cluster
         cluster_db_object.status = "Adding a node"
         cluster_db_object.save()
 
-        # Create a client for Appliances
-        appliances_client = AppliancesApi()
-        appliances_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(appliances_client, "admin", "pass")
+        appliance = remote.appliances_name(cluster_db_object.appliance)
 
-        # Create a client for ApplianceImplementations
-        appliance_implementations_client = ApplianceImplementationsApi()
-        appliance_implementations_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(appliance_implementations_client, "admin", "pass")
-
-        # Create a client for Sites
-        sites_client = SitesApi()
-        sites_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(sites_client, "admin", "pass")
-
-        appliance = appliances_client.appliances_name_get(cluster_db_object.appliance)
-
-        sites = sites_client.sites_get()
-        implementations = appliance_implementations_client.appliances_impl_get()
+        sites = remote.sites()
+        implementations = remote.appliance_implementations()
         clusters = Cluster.objects.all()
 
         appliance_impl_name = cluster_db_object.appliance_impl
@@ -144,8 +125,8 @@ class MisterClusterHeat(MisterClusterInterface):
             cluster_db_object.credential = credential.name
             cluster_db_object.save()
         else:
-            appliance_impl = appliance_implementations_client.appliances_impl_name_get(appliance_impl_name)
-            common_appliance_impl = appliance_implementations_client.appliances_impl_name_get(common_appliance_impl_name)
+            appliance_impl = remote.appliances_impl_name_get(appliance_impl_name)
+            common_appliance_impl = remote.appliances_impl_name_get(common_appliance_impl_name)
 
         if appliance_impl is None or common_appliance_impl is None:
             cluster_db_object.status = "Error"

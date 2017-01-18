@@ -1,6 +1,10 @@
-from rest_framework import serializers
-from models import Credential, Profile, Cluster, Host
+# coding: utf-8
+from __future__ import absolute_import, print_function
+
 import django.contrib.auth
+from rest_framework import serializers
+
+from .models import Credential, Profile, Cluster, Host
 
 
 class UserSerializer(serializers.ModelSerializer):

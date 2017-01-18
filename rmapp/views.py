@@ -6,11 +6,6 @@ import logging
 import time
 import uuid
 
-from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
-from common_dibbs.clients.rpa_client.apis import ActionsApi
-from common_dibbs.misc import configure_basic_authentication
-
-from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
 from django.shortcuts import render
@@ -22,6 +17,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
 import urllib3.exceptions
 
+from rmapp import remote
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
 from rmapp.models import Cluster, Host, Profile, Credential
@@ -47,7 +43,6 @@ class ClusterViewSet(viewsets.ModelViewSet):
     This viewset automatically provides `list`, `create`, `retrieve`,
     `update` and `destroy` actions.
     """
-
     queryset = Cluster.objects.all()
     serializer_class = ClusterSerializer
     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
@@ -58,13 +53,8 @@ class ClusterViewSet(viewsets.ModelViewSet):
             data2[key] = request.data[key]
         data2[u'user'] = request.user.id
 
-        # Create a client for Appliances
-        appliances_client = AppliancesApi()
-        appliances_client.api_client.host = settings.DIBBS['urls']['ar']
-        configure_basic_authentication(appliances_client, "admin", "pass")
-
         # Retrieve site information with the Appliance Registry API (check for existence)
-        appliance = appliances_client.appliances_name_get(name=data2[u'appliance'])
+        appliance = remote.appliances_name(data2[u'appliance'])
 
         serializer = self.get_serializer(data=data2)
         serializer.is_valid(raise_exception=True)
@@ -128,16 +118,18 @@ class ClusterViewSet(viewsets.ModelViewSet):
                 return Response(user_creds)
 
         master_node_ip = cluster.master_node.instance_ip
-
-        actions_api = ActionsApi()
-        actions_api.api_client.host = "http://%s:8012" % (master_node_ip,)
-        configure_basic_authentication(actions_api, "admin", "pass")
+        service_url = 'http://{}:{}'.format(master_node_ip, 8012)
 
         try:
-            result = actions_api.new_account_post()
+            result = remote.actions_new_account(service_url)
         except Exception:
-            logging.info("service located at 'http://%s:8012' does not seem to be ready, waiting 5 seconds before retrying to contact it" % (master_node_ip,))
-            return Response({"detail": "The cluster is not ready yet"}, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+            logging.info(
+                "service located at '{}' does not seem to be ready, "
+                "waiting 5 seconds before retrying".format(service_url))
+            return Response(
+                {"detail": "The cluster is not ready yet"},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         response = {
             "username": result.username,
@@ -330,7 +322,7 @@ def rsa_public_key(request, user_id):
 def get_certificate(request, pk):
     user = get_user_model().objects.filter(id=pk)
     if user:
-        tmp_folder = "tmp/%s" % user[0].username
+        tmp_folder = "/tmp/%s" % user[0].username
         from rmapp.core.authenticator import Authenticator
         authenticator = Authenticator()
         certificate = authenticator.generate_public_certification(tmp_folder)

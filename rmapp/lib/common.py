@@ -6,13 +6,12 @@ import os
 import sys
 import time
 
+from Crypto.PublicKey import RSA
 from django.conf import settings
 from jinja2 import Environment, FileSystemLoader, Template
 import paramiko
 
-from common_dibbs.misc import configure_basic_authentication
-
-logging.basicConfig(level=logging.INFO)
+from rmapp import remote
 
 parameters = {}
 
@@ -49,22 +48,8 @@ def generate_template_file_from_string(string, output_file, context):
     return True
 
 
-def get_template_from_appliance_registry(appliance_impl_name, action_name):
-    from common_dibbs.clients.ar_client.apis.scripts_api import ScriptsApi
-
-    # Create a client for Scripts
-    scripts_client = ScriptsApi()
-    scripts_client.api_client.host = settings.DIBBS['urls']['ar']
-    configure_basic_authentication(scripts_client, "admin", "pass")
-
-    script = scripts_client.scripts_appliance_action_get(appliance_impl_name, action_name)
-    # TODO fix
-    print(script)
-    return script.code
-
-
 def generate_script_from_appliance_registry(appliance_impl_name, script, output_file, variables):
-    template = get_template_from_appliance_registry(appliance_impl_name, script)
+    template = remote.get_template_from_appliance_registry(appliance_impl_name, script)
     string = generate_template_from_string(template, variables)
     with open(output_file, "w") as f:
         f.write(string)
@@ -140,9 +125,10 @@ def create_file(path, data):
 
 
 def generate_user_keypairs(user):
+    from rmapp.core.authenticator import Authenticator
 
     request_uuid = user.username
-    tmp_folder = "tmp/%s" % (request_uuid)
+    tmp_folder = "/tmp/%s" % (request_uuid)
 
     if not os.path.exists(tmp_folder):
         os.makedirs(tmp_folder)
@@ -151,7 +137,6 @@ def generate_user_keypairs(user):
     key_paths = generate_rsa_key(tmp_folder)
 
     # Generate API token for the project
-    from rmapp.core.authenticator import Authenticator
     authenticator = Authenticator()
     certificate = authenticator.generate_public_certification(tmp_folder)
     user.security_certificate = certificate
@@ -160,16 +145,13 @@ def generate_user_keypairs(user):
 
 def generate_rsa_key(path, bits=1024):
     """ code extracted from http://stackoverflow.com/questions/2466401/how-to-generate-ssh-key-pairs-with-python. """
-    from os import chmod
-    from Crypto.PublicKey import RSA
-
     key = RSA.generate(bits)
 
     private_key_path = "%s/private.key" % (path)
     public_key_path = "%s/public.key" % (path)
 
     with open(private_key_path, 'w') as content_file:
-        chmod(private_key_path, 0600)
+        os.chmod(private_key_path, 0o600)
         content_file.write(key.exportKey('PEM'))
     pubkey = key.publickey()
     with open(public_key_path, 'w') as content_file:
