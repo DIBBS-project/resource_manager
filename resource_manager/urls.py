@@ -2,7 +2,6 @@ from django.conf.urls import include, url
 from django.contrib import admin
 from rmapp import views
 from rest_framework.routers import DefaultRouter
-import rest_framework.authtoken.views
 
 router = DefaultRouter()
 router.register(r'users', views.UserViewSet)
@@ -27,7 +26,4 @@ urlpatterns = [
     # Demo
     # url(r'^demo/', include('demo.urls')),
     # url(r'^get_certificate/(?P<pk>[0-9]+)/$', views.get_certificate, name="get_certificate"),
-
-    # Allows to get a token by sending credentials
-    url(r'^api-token-auth/', rest_framework.authtoken.views.obtain_auth_token),
 ]
