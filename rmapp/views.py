@@ -113,7 +113,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
             return Response({'detail': 'DIBBs username not provided'}, status=400)
 
         try:
-            cc = ClusterCredential.objects.get(cluster=cluster, dibbs_user)
+            cc = ClusterCredential.objects.get(cluster=cluster, dibbs_user=request.dibbs_user)
         except ClusterCredential.DoesNotExist:
             cc = None
         else:
