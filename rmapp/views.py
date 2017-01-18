@@ -20,7 +20,7 @@ import urllib3.exceptions
 from rmapp import remote
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
-from rmapp.models import Cluster, Host, Profile, Credential
+from rmapp.models import Cluster, Host, Profile, Credential, ClusterCredential
 from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
 # Get an instance of a logger
@@ -105,17 +105,25 @@ class ClusterViewSet(viewsets.ModelViewSet):
             cluster = Cluster.objects.get(id=pk)
         except Cluster.DoesNotExist:
             return Response(
-                {"detail": "Could not find a cluster with id ''".format(pk)},
+                {"detail": "Could not find a cluster with id '{}'".format(pk)},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+        if request.dibbs_user is None:
+            return Response({'detail': 'DIBBs username not provided'}, status=400)
+
         try:
-            user_creds = json.loads(cluster.the_new_user)
-        except ValueError:
-            logger.warning('corrupt JSON in cluster.the_new_user')
+            cc = ClusterCredential.objects.get(cluster=cluster, dibbs_user)
+        except ClusterCredential.DoesNotExist:
+            cc = None
         else:
-            if user_creds:
-                return Response(user_creds)
+            try:
+                user_creds = json.loads(cc.resource_credentials)
+            except ValueError:
+                logger.warning('corrupt JSON in database')
+            else:
+                if user_creds:
+                    return Response(user_creds)
 
         master_node_ip = cluster.master_node.instance_ip
         service_url = 'http://{}:{}'.format(master_node_ip, 8012)
@@ -135,8 +143,19 @@ class ClusterViewSet(viewsets.ModelViewSet):
             "username": result.username,
             "password": result.password
         }
-        cluster.the_new_user = json.dumps(response)
-        cluster.save()
+
+        if cc is None:
+            # create new
+            ClusterCredential.objects.create(
+                cluster=cluster,
+                dibbs_user=request.dibbs_user,
+                resource_credentials=json.dumps(response)
+            )
+        else:
+            # was corrupt; attempt to resave
+            cc.resource_credentials = json.dumps(response)
+            cc.save()
+
         return Response(response, status=201)
 
     @detail_route(methods=['post'])

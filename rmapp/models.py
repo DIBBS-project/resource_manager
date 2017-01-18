@@ -45,9 +45,6 @@ class Cluster(models.Model):
     targeted_slaves_count = models.IntegerField(default=0)
     current_slaves_count = models.IntegerField(default=0)
 
-    # HACK: new_account now only generates one user. unclear why/what the single account should relate to.
-    the_new_user = models.CharField(max_length=250, default='{}')
-
     # Relationships
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
@@ -74,6 +71,12 @@ class Cluster(models.Model):
                 }
                 break
         return full_credentials
+
+
+class ClusterCredential(models.Model):
+    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
+    dibbs_user = models.CharField(max_length=100)
+    resource_credentials = models.CharField(max_length=250, default='{}')
 
 
 class Host(models.Model):

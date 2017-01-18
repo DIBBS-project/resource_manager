@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import unicode_literals
 
-from django.db import models, migrations
+from django.db import migrations, models
 from django.conf import settings
-import rmapp.models
+import uuid
 
 
 class Migration(migrations.Migration):
@@ -19,7 +19,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(verbose_name='ID', serialize=False, auto_created=True, primary_key=True)),
                 ('name', models.CharField(default=b'', max_length=100, blank=True)),
-                ('uuid', models.CharField(default=rmapp.models.generate_uuid, max_length=100)),
+                ('uuid', models.CharField(default=uuid.uuid4, max_length=100)),
                 ('private_key', models.TextField(default=b'', max_length=1000, blank=True)),
                 ('public_key', models.TextField(default=b'', max_length=1000, blank=True)),
                 ('status', models.CharField(default=b'IDLE', max_length=100, blank=True)),
@@ -27,6 +27,7 @@ class Migration(migrations.Migration):
                 ('credential', models.CharField(default=b'', max_length=100, blank=True)),
                 ('targeted_slaves_count', models.IntegerField(default=0)),
                 ('current_slaves_count', models.IntegerField(default=0)),
+                ('the_new_user', models.CharField(default=b'{}', max_length=250)),
                 ('appliance', models.CharField(max_length=100)),
                 ('appliance_impl', models.CharField(max_length=100, blank=True)),
                 ('common_appliance_impl', models.CharField(max_length=100, blank=True)),
