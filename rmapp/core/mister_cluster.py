@@ -5,7 +5,9 @@ import logging
 
 from django.conf import settings
 import heatclient
-from novaclient.v2 import client
+from keystoneauth1 import loading
+from keystoneauth1 import session
+from novaclient import client as novaclient
 import yaml
 
 from common_dibbs.misc import configure_basic_authentication
@@ -64,15 +66,21 @@ def get_heatclient_from_credentials(full_credentials):
 
 
 def get_novaclient_from_credentials(full_credentials):
-    import novaclient
     # assert full_credentials[u'site'].type == 'openstack'
     os_auth_url = full_credentials[u'site'].contact_url
     credentials = full_credentials[u'credentials']
     username = credentials[u'username']
     password = credentials[u'password']
     project = credentials[u'project']
-    novaclient = novaclient.v2.client.Client(username, password, project, os_auth_url)
-    return novaclient
+
+    loader = loading.get_plugin_loader('password')
+    auth = loader.load_from_options(auth_url=os_auth_url,
+                                    username=username,
+                                    password=password,
+                                    project_name=project)
+    sess = session.Session(auth=auth)
+    logger.info("Calling nova client with %s %s %s %s", username, password, project, os_auth_url)
+    return novaclient.Client('2', session=sess)
 
 
 class MisterClusterInterface(object):
