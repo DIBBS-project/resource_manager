@@ -16,7 +16,7 @@ from rmapp.core.scheduling_policies import SimpleSchedulingPolicy as SchedulingP
 from rmapp.lib.common import *
 from rmapp.models import Cluster, Host
 
-
+logger = logging.getLogger(__name__)
 authenticator = Authenticator()
 
 
@@ -93,7 +93,7 @@ class MisterClusterInterface(object):
 class MisterClusterHeat(MisterClusterInterface):
 
     def resize_cluster(self, cluster, new_size=1, master=None):
-        logging.info("Starting the resize of the cluster <%s>" % (cluster.id))
+        logger.info("Starting the resize of the cluster <%s>" % (cluster.id))
 
         cluster_db_object = cluster
         cluster_db_object.status = "Adding a node"
@@ -159,32 +159,32 @@ class MisterClusterHeat(MisterClusterInterface):
             os.makedirs(tmp_folder)
 
         # Generating Heat template
-        logging.info("Generating Heat template")
+        logger.info("Generating Heat template")
         prepare_node_path = "%s/heat_template.yaml" % (tmp_folder)
         jinja_variables = {
             "infrastructure_type": full_credentials[u'site'].type
         }
         template_str = generate_script_from_appliance_registry(appliance_impl_name, "heat_template", prepare_node_path, jinja_variables)
-        logging.info("Heat template has been generated")
+        logger.info("Heat template has been generated")
 
         nc = get_novaclient_from_credentials(full_credentials)
-        logging.info("Created a nova client object")
+        logger.info("Created a nova client object")
 
         networks = filter(lambda n: n.label != "ext-net", nc.networks.list())
-        logging.info("Found the available networks: %s" % (networks))
+        logger.info("Found the available networks: %s" % (networks))
 
         if len(networks) == 0:
-            logging.error("No network found :(")
+            logger.error("No network found :(")
             raise Exception("No network found :(")
 
         network_name = networks[0].label
-        logging.info("Found the network to use: %s" % (network_name))
+        logger.info("Found the network to use: %s" % (network_name))
 
         flavors = nc.flavors.list()
         flavor_name = flavors[0].name
-        logging.info("Found the flavor to use: %s" % (flavor_name))
+        logger.info("Found the flavor to use: %s" % (flavor_name))
 
-        logging.info("Preparing the creation of a new Heat stack")
+        logger.info("Preparing the creation of a new Heat stack")
         heat_environment = {
             "parameters": {
                 "cluster_size": new_size,
@@ -221,7 +221,7 @@ class MisterClusterHeat(MisterClusterInterface):
                 "environment": heat_environment
             }
             # The stack already exist, we only need to update it
-            logging.info("An existing Heat stack has been detected, I will only update it")
+            logger.info("An existing Heat stack has been detected, I will only update it")
 
             continue_to_wait = True
             while continue_to_wait:
@@ -230,7 +230,7 @@ class MisterClusterHeat(MisterClusterInterface):
                     heat_client.stacks.update(**heat_template_data)
                 except Exception as e:
                     continue_to_wait = all(map(lambda s: s in e.message, ["has an action", "in progress"]))
-                    logging.info("Heat conflict detected, waiting 2 more seconds")
+                    logger.info("Heat conflict detected, waiting 2 more seconds")
                     time.sleep(2)
             stack_id = cluster.name
 
@@ -238,7 +238,7 @@ class MisterClusterHeat(MisterClusterInterface):
             resource_group = None
             resource_group_is_not_ready = True
             while resource_group_is_not_ready:
-                logging.info("Trying to find the resource_group containing slaves")
+                logger.info("Trying to find the resource_group containing slaves")
                 fields = {
                     "stack_id": stack_id,
                     "nested_depth": None,
@@ -246,7 +246,7 @@ class MisterClusterHeat(MisterClusterInterface):
                 }
                 stack_resources = heat_client.resources.list(**fields)
                 resource_group = filter(lambda r: "ResourceGroup" in r.resource_type, stack_resources)[0]
-                logging.info("This is how the resource_group containing slaves looks like: %s" % (resource_group))
+                logger.info("This is how the resource_group containing slaves looks like: %s" % (resource_group))
                 resource_group_is_not_ready = resource_group is None or resource_group.physical_resource_id == ""
                 if resource_group_is_not_ready:
                     time.sleep(4)
@@ -255,9 +255,9 @@ class MisterClusterHeat(MisterClusterInterface):
             slave_resources = []
             if new_size > 0:
                 while len(slave_resources) == 0:
-                    logging.info("Trying to list resources of the resource_group")
+                    logger.info("Trying to list resources of the resource_group")
                     slave_resources = heat_client.resources.list(heat_client.stacks.get(resource_group.physical_resource_id).id)
-                    logging.info("I found those resources: %s" % (slave_resources))
+                    logger.info("I found those resources: %s" % (slave_resources))
 
             nova_client = get_novaclient_from_credentials(full_credentials)
 
@@ -268,7 +268,7 @@ class MisterClusterHeat(MisterClusterInterface):
             # Create a host for the master node
             master_host = Host()
             floating_ips = []
-            logging.info("Setting logically the floating IP of the master node")
+            logger.info("Setting logically the floating IP of the master node")
             while len(floating_ips) == 0:
                 master_instance = nova_client.servers.find(id=master_resource.physical_resource_id)
                 floating_ips = sum(map(lambda net: filter(lambda addr: addr["OS-EXT-IPS:type"]=="floating", master_instance.addresses[net]), master_instance.addresses), [])
@@ -277,12 +277,12 @@ class MisterClusterHeat(MisterClusterInterface):
             master_host.cluster_id = cluster.id
             master_host.is_master = True
             master_host.save()
-            logging.info("The master node has the following IP: %s" % (floating_ips[0]["addr"]))
+            logger.info("The master node has the following IP: %s" % (floating_ips[0]["addr"]))
 
             # Create a host for each of the slaves
             last_slave = None
             for slave_resource in slave_resources:
-                logging.info("Creating logically a slave resource")
+                logger.info("Creating logically a slave resource")
                 slave_host = Host()
                 slave_host.name = slave_resource.resource_name
                 slave_host.cluster_id = cluster.id
@@ -290,15 +290,15 @@ class MisterClusterHeat(MisterClusterInterface):
                 slave_host.save()
                 last_slave = slave_host
 
-            logging.info("Updating slave count")
+            logger.info("Updating slave count")
             cluster.current_slaves_count = new_size
             cluster.save()
 
-        logging.info("MisterCluster has finished to deploy the stack")
+        logger.info("MisterCluster has finished to deploy the stack")
         return last_slave
 
     def delete_cluster(self, cluster):
-        logging.info("Starting the resize of the cluster <%s>" % (cluster.id))
+        logger.info("Starting the resize of the cluster <%s>" % (cluster.id))
 
         full_credentials = cluster.get_full_credentials()
         if full_credentials is None:
