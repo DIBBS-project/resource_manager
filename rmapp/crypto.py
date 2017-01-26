@@ -4,20 +4,36 @@ from __future__ import absolute_import, print_function
 import base64
 import json
 
+from Crypto.Cipher import PKCS1_OAEP
 from Crypto.PublicKey import RSA
 
 
-def decrypt_credentials(encrypted_credentials, profile):
-    # Use the private key de temporarily decrypt and check that it gives JSON
-    key = RSA.importKey(profile.rsa_key)
+RSA_KEY_LENGTH = 1024
 
-    to_decrypt = base64.b64decode(encrypted_credentials)
-    decrypted_credentials = key.decrypt(to_decrypt)
+
+def decrypt_credentials(encrypted_credentials, rsa_key):
+    """
+    Use the private key to decrypt and decode the credentials from
+    base64 cyphertext to a JSON object.
+    """
+    key = RSA.importKey(rsa_key)
+    cipher = PKCS1_OAEP.new(key)
+    cipher_text = base64.b64decode(encrypted_credentials)
+    message = cipher.decrypt(cipher_text)
 
     # Temporary fix
     # TODO: Understand why there are additional characters at the beginning and fix this hack
-    pos = decrypted_credentials.rfind('{')
+    pos = message.rfind('{')
     print(pos)
-    decrypted_credentials = decrypted_credentials[decrypted_credentials.rfind('{'):]
-    decrypted_credentials = json.loads(decrypted_credentials)
-    return decrypted_credentials
+    message = message[message.rfind('{'):]
+
+    return json.loads(message)
+
+
+def generate_rsa_key():
+    return RSA.generate(RSA_KEY_LENGTH).exportKey()
+
+
+def private_to_public(private_key):
+    key = RSA.importKey(private_key)
+    return key.publickey().exportKey()

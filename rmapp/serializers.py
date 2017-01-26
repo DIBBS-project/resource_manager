@@ -2,35 +2,42 @@
 from __future__ import absolute_import, print_function
 
 import django.contrib.auth
+from django.contrib.auth import get_user_model
 from rest_framework import serializers
 
 from .models import Credential, Profile, Cluster, Host
 
-
-class UserSerializer(serializers.ModelSerializer):
-    credentials = serializers.PrimaryKeyRelatedField(many=True, queryset=Credential.objects.all())
-    clusters = serializers.PrimaryKeyRelatedField(many=True, queryset=Cluster.objects.all())
-
-    class Meta:
-        model = django.contrib.auth.get_user_model()
-        fields = ('id', 'username', 'first_name', 'last_name', 'email',
-                  'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
-                  'date_joined',
-                  'password',)
-        read_only_fields = ('id', 'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
-                            'date_joined',)
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
+#
+# class UserSerializer(serializers.ModelSerializer):
+#     credentials = serializers.PrimaryKeyRelatedField(many=True, queryset=Credential.objects.all())
+#     clusters = serializers.PrimaryKeyRelatedField(many=True, queryset=Cluster.objects.all())
+#
+#     class Meta:
+#         model = django.contrib.auth.get_user_model()
+#         fields = ('id', 'username', 'first_name', 'last_name', 'email',
+#                   'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
+#                   'date_joined',
+#                   'password',)
+#         read_only_fields = ('id', 'credentials', 'clusters', 'is_staff', 'is_superuser', 'is_active',
+#                             'date_joined',)
+#         extra_kwargs = {
+#             'password': {'write_only': True}
+#         }
 
 
 class CredentialSerializer(serializers.ModelSerializer):
+    user = serializers.PrimaryKeyRelatedField(read_only=True, default=serializers.CurrentUserDefault())
+
     class Meta:
         model = Credential
         fields = ('site_name', 'name', 'user', 'credentials',)
         extra_kwargs = {
             'credentials': {'write_only': True}
         }
+
+    # def validate_user(self, user):
+    #     UserModel = get_user_model()
+    #     return UserModel.objects.get(username=user)
 
 
 class ProfileSerializer(serializers.ModelSerializer):

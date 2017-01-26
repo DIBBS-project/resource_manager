@@ -4,7 +4,7 @@ from rmapp import views
 from rest_framework.routers import DefaultRouter
 
 router = DefaultRouter()
-router.register(r'users', views.UserViewSet)
+# router.register(r'users', views.UserViewSet)
 router.register(r'profiles', views.ProfileViewSet)
 router.register(r'credentials', views.CredentialViewSet)
 router.register(r'clusters', views.ClusterViewSet)
@@ -18,7 +18,8 @@ urlpatterns = [
     url(r'^$',  views.index, name='index'),
 
     # RSA
-    url(r'^rsa_public_key/(?P<user_id>[0-9]+)/$', views.rsa_public_key),
+    # url(r'^rsa_public_key/(?P<user_id>[0-9]+)/$', views.rsa_public_key),
+    url(r'^rsa_public_key/(?P<user>\w+)/$', views.rsa_public_key),
 
     # Credentials
     url(r'^credentials/user/(?P<user_id>[0-9]+)/$', views.credentials_for_user),

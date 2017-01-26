@@ -10,7 +10,7 @@ from keystoneauth1 import session
 from novaclient import client as novaclient
 import yaml
 
-from common_dibbs.misc import configure_basic_authentication
+from common_dibbs.django import relay_swagger
 
 from rmapp import remote
 from rmapp.core.authenticator import Authenticator

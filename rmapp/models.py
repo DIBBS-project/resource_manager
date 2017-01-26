@@ -3,10 +3,8 @@ from __future__ import absolute_import, print_function
 
 import uuid
 
-from Crypto.PublicKey import RSA
 from django.conf import settings
 from django.contrib import auth
-from django.contrib.auth.models import User
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
@@ -14,9 +12,6 @@ from rest_framework.authtoken.models import Token
 
 from rmapp import crypto
 from rmapp import remote
-
-
-RSA_KEY_LENGTH = 2048
 
 
 class Credential(models.Model):
@@ -29,7 +24,11 @@ class Credential(models.Model):
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, primary_key=True,
                                 related_name='profile')
-    rsa_key = models.TextField(max_length=1024, blank=True, default='')
+    rsa_private = models.TextField(max_length=1024, default=crypto.generate_rsa_key)
+
+    @property
+    def rsa_public(self):
+        return crypto.private_to_public(self.rsa_private)
 
 
 class Cluster(models.Model):
@@ -45,9 +44,6 @@ class Cluster(models.Model):
     targeted_slaves_count = models.IntegerField(default=0)
     current_slaves_count = models.IntegerField(default=0)
 
-    # HACK: new_account now only generates one user. unclear why/what the single account should relate to.
-    the_new_user = models.CharField(max_length=250, default='{}')
-
     # Relationships
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.CASCADE)
     appliance = models.CharField(max_length=100)
@@ -61,19 +57,22 @@ class Cluster(models.Model):
     def get_full_credentials(self):
         appl_impl = remote.appliance_impl_name_get(str(self.appliance_impl))
 
-        user = auth.get_user_model().objects.get(id=self.user_id)
-        full_credentials = None
-        possible_credentials = user.credentials.all() if self.credential == "" else Credential.objects.filter(name=self.credential)
-        for creds in possible_credentials:
-            if creds.site_name == appl_impl.site:
-                profile = Profile.objects.get(user_id=self.user_id)
-                full_credentials = {
-                    "site": remote.sites_name_get(creds.site_name),
-                    "user": self.user,
-                    "credentials": crypto.decrypt_credentials(creds.credentials, profile),
-                }
-                break
-        return full_credentials
+        cred_filter = {
+            'site_name': appl_impl.site,
+        }
+        if self.credential == '':
+            cred_filter['user'] = self.user
+        else:
+            cred_filter['name'] = self.credential
+
+        credential = Credential.objects.filter(**cred_filter).first()
+        profile = Profile.objects.get(user=self.user)
+
+        return {
+            "site": remote.sites_name_get(credential.site_name),
+            "user": self.user,
+            "credentials": crypto.decrypt_credentials(credential.credentials, profile.rsa_private),
+        }
 
 
 class Host(models.Model):
@@ -84,17 +83,3 @@ class Host(models.Model):
 
     # Relationships
     cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-
-
-# Add a token upon user creation
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_auth_token(sender, instance=None, created=False, **kwargs):
-    if created:
-        Token.objects.create(user=instance)
-
-
-# Add a profile upon user creation
-@receiver(post_save, sender=settings.AUTH_USER_MODEL)
-def create_profile(sender, instance=None, created=False, **kwargs):
-    if created:
-        Profile.objects.create(user=instance, rsa_key=RSA.generate(RSA_KEY_LENGTH).exportKey())

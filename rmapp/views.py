@@ -8,7 +8,7 @@ import uuid
 
 from django.contrib.auth import get_user_model
 from django.http import HttpResponse
-from django.shortcuts import render
+from django.shortcuts import render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import api_view
@@ -21,7 +21,8 @@ from rmapp import remote
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
 from rmapp.models import Cluster, Host, Profile, Credential
-from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
+from rmapp.serializers import ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
+# from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
@@ -51,7 +52,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
         data2 = {}
         for key in request.data:
             data2[key] = request.data[key]
-        data2[u'user'] = request.user.id
+        data2[u'user'] = request.user.username
 
         # Retrieve site information with the Appliance Registry API (check for existence)
         appliance = remote.appliances_name(data2[u'appliance'])
@@ -61,7 +62,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
         cluster = Cluster()
         cluster.appliance = appliance.name
-        cluster.user_id = request.user.id
+        cluster.user = request.user
         cluster.name = "%s_%s" % (appliance.name, uuid.uuid4())
         cluster.hints = data2["hints"]
         if "targeted_slaves_count" in data2:
@@ -208,7 +209,7 @@ class HostViewSet(viewsets.ModelViewSet):
         data2 = {}
         for key in data:
             data2[key] = data[key]
-        data2[u'user'] = request.user.id
+        data2[u'user'] = request.user.username
 
         cluster_candidates = Cluster.objects.filter(id=data2["cluster_id"])
         if len(cluster_candidates) > 0:
@@ -249,7 +250,7 @@ class CredentialViewSet(viewsets.ModelViewSet):
         data2 = {}
         for key in request.data:
             data2[key] = request.data[key]
-        data2[u'user'] = request.user.id
+        data2[u'user'] = request.user.username
 
         serializer = self.get_serializer(data=data2)
         serializer.is_valid(raise_exception=True)
@@ -274,27 +275,27 @@ def credentials_for_user(request, user_id):
 # User management
 ##############################
 
-
-class UserViewSet(viewsets.ModelViewSet):
-    """
-    This viewset automatically provides `list`, `create`, `retrieve`,
-    `update` and `destroy` actions.
-    """
-    queryset = get_user_model().objects.all()
-    serializer_class = UserSerializer
-    permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-
-    def create(self, request, *args, **kwargs):
-        data2 = {}
-        for key in request.data:
-            data2[key] = request.data[key]
-        data2[u'credentials'] = []
-        data2[u'clusters'] = []
-        serializer = self.get_serializer(data=data2)
-        serializer.is_valid(raise_exception=True)
-        self.perform_create(serializer)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+#
+# class UserViewSet(viewsets.ModelViewSet):
+#     """
+#     This viewset automatically provides `list`, `create`, `retrieve`,
+#     `update` and `destroy` actions.
+#     """
+#     queryset = get_user_model().objects.all()
+#     serializer_class = UserSerializer
+#     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
+#
+#     def create(self, request, *args, **kwargs):
+#         data2 = {}
+#         for key in request.data:
+#             data2[key] = request.data[key]
+#         data2[u'credentials'] = []
+#         data2[u'clusters'] = []
+#         serializer = self.get_serializer(data=data2)
+#         serializer.is_valid(raise_exception=True)
+#         self.perform_create(serializer)
+#         headers = self.get_success_headers(serializer.data)
+#         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
 
 class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
@@ -308,15 +309,13 @@ class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 @api_view(['GET'])
-def rsa_public_key(request, user_id):
-    from Crypto.PublicKey import RSA
-    try:
-        profile = Profile.objects.get(user=user_id)
-        key = RSA.importKey(profile.rsa_key)
-        public_key_str = key.publickey().exportKey()
-    except:
-        return Response({"error": "Cannot find user %s" % user_id}, status=404)
-    return Response({"public_key": public_key_str})
+def rsa_public_key(request, user):
+    UserModel = get_user_model()
+
+    user = get_object_or_404(UserModel, username=user)
+    profile, created = Profile.objects.get_or_create(user=user)
+
+    return Response({"public_key": profile.rsa_public})
 
 
 def get_certificate(request, pk):
