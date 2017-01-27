@@ -15,12 +15,12 @@ from rest_framework.decorators import api_view
 from rest_framework.decorators import detail_route
 from rest_framework.parsers import JSONParser
 from rest_framework.response import Response
-import urllib3.exceptions
+from urllib3.exceptions import HTTPError
 
 from rmapp import remote
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
-from rmapp.models import Cluster, Host, Profile, Credential
+from rmapp.models import Cluster, Host, Profile, Credential, ClusterCredential
 from rmapp.serializers import ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 # from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
@@ -97,6 +97,37 @@ class ClusterViewSet(viewsets.ModelViewSet):
         # return Response(serializer.data, status=status.HTTP_201_CREATED)
         return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
 
+    def _get_existing_account(self, request, cluster):
+        user_creds = ClusterCredential.objects.get(
+            cluster=cluster, user=request.user)
+
+        response = {
+            "username": user_creds.username,
+            "password": user_creds.password
+        }
+        return Response(response, status=status.HTTP_200_OK)
+
+    def _create_new_account(self, request, cluster):
+        result = remote.actions_new_account(cluster.service_url)
+
+        self._save_account(request, cluster, result)
+
+        response = {
+            "username": result.username,
+            "password": result.password
+        }
+        return Response(response, status=status.HTTP_201_CREATED)
+
+
+    def _save_account(self, request, cluster, credentials):
+        cc_data = {
+            'cluster': cluster,
+            'user': request.user,
+            'username': credentials.username,
+            'password': credentials.password,
+        }
+        ClusterCredential.objects.create(**cc_data)
+
     @detail_route(methods=['post'])
     def new_account(self, request, pk):
         """
@@ -106,39 +137,27 @@ class ClusterViewSet(viewsets.ModelViewSet):
             cluster = Cluster.objects.get(id=pk)
         except Cluster.DoesNotExist:
             return Response(
-                {"detail": "Could not find a cluster with id ''".format(pk)},
+                {"detail": "Could not find a cluster with id '{}'".format(pk)},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
         try:
-            user_creds = json.loads(cluster.the_new_user)
-        except ValueError:
-            logger.warning('corrupt JSON in cluster.the_new_user')
-        else:
-            if user_creds:
-                return Response(user_creds)
-
-        master_node_ip = cluster.master_node.instance_ip
-        service_url = 'http://{}:{}'.format(master_node_ip, 8012)
+            return self._get_existing_account(request, cluster)
+        except ClusterCredential.DoesNotExist:
+            # not found, create one.
+            pass
 
         try:
-            result = remote.actions_new_account(service_url)
-        except Exception:
+            return self._create_new_account(request, cluster)
+        except HTTPError:
             logging.info(
                 "service located at '{}' does not seem to be ready, "
-                "waiting 5 seconds before retrying".format(service_url))
+                "waiting 5 seconds before retrying".format(cluster.service_url))
             return Response(
                 {"detail": "The cluster is not ready yet"},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
-        response = {
-            "username": result.username,
-            "password": result.password
-        }
-        cluster.the_new_user = json.dumps(response)
-        cluster.save()
-        return Response(response, status=201)
 
     @detail_route(methods=['post'])
     def add_host(self, request, pk):

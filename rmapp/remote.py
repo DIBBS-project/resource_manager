@@ -3,6 +3,7 @@ from __future__ import absolute_import, print_function
 
 from django.conf import settings
 
+from common_dibbs.auth import swagger_basic_auth
 from common_dibbs.clients.ar_client.apis.appliances_api import AppliancesApi
 from common_dibbs.clients.ar_client.apis.appliance_implementations_api import ApplianceImplementationsApi
 from common_dibbs.clients.ar_client.apis.scripts_api import ScriptsApi
@@ -25,7 +26,8 @@ def actions_new_account(url_root):
     '''
     actions_api = ActionsApi()
     actions_api.api_client.host = url_root
-    relay_swagger(actions_api, get_request())
+    # relay_swagger(actions_api, get_request())
+    swagger_basic_auth(actions_api, "admin", "pass")
 
     return actions_api.new_account_post()
 
