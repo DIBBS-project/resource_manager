@@ -22,7 +22,6 @@ from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplemen
 # from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
 from rmapp.models import Cluster, Host, Profile, Credential, ClusterCredential
 from rmapp.serializers import ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
-# from rmapp.serializers import UserSerializer, ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
 # Get an instance of a logger
 logger = logging.getLogger(__name__)
