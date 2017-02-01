@@ -11,6 +11,7 @@ from novaclient import client as novaclient
 import yaml
 
 from common_dibbs.django import relay_swagger
+import requests
 
 from rmapp import remote
 from rmapp.core.authenticator import Authenticator
@@ -192,6 +193,9 @@ class MisterClusterHeat(MisterClusterInterface):
         flavor_name = flavors[0].name
         logger.info("Found the flavor to use: %s" % (flavor_name))
 
+        r = requests.get('https://ipv4.jsonip.com/')
+        my_public_ip = r.json()['ip']
+
         logger.info("Preparing the creation of a new Heat stack")
         heat_environment = {
             "parameters": {
@@ -200,6 +204,7 @@ class MisterClusterHeat(MisterClusterInterface):
                 "user_name": "root",
                 "flavor_name": flavor_name,
                 "network_name": network_name,
+                "allowed_ip": "%s/32" % my_public_ip,
             }
         }
         if full_credentials[u'site'].type == "baremetal":
