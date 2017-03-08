@@ -72,7 +72,8 @@ class ClusterSerializer(serializers.ModelSerializer):
         model = Cluster
         fields = ('id', 'name', 'uuid', 'public_key', 'status',
                   'hosts_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',
-                  'appliance', 'appliance_impl', 'common_appliance_impl', 'master_node_id', 'hints', 'credential',
+                  'appliance', 'appliance_impl', 'common_appliance_impl',
+                  'master_node_id', 'hints', 'credential',
                   'targeted_slaves_count', 'current_slaves_count')
         read_only_fields = ('id', 'hosts_ids', 'hosts_ips', 'master_node_id', 'master_node_ip',)
 
