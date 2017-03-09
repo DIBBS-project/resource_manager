@@ -19,11 +19,9 @@ from urllib3.exceptions import HTTPError
 
 from rmapp import remote
 from rmapp.core.mister_cluster import MisterClusterHeat as MisterClusterImplementation
-# from rmapp.core.mister_cluster import MisterClusterNova as MisterClusterImplementation
 from rmapp.models import Cluster, Host, Profile, Credential, ClusterCredential
 from rmapp.serializers import ClusterSerializer, HostSerializer, ProfileSerializer, CredentialSerializer
 
-# Get an instance of a logger
 logger = logging.getLogger(__name__)
 
 
@@ -31,11 +29,6 @@ logger = logging.getLogger(__name__)
 def index(request):
     clusters = Cluster.objects.all()
     return render(request, "index.html", {"clusters": clusters})
-
-
-##############################
-# Cluster management
-##############################
 
 
 class ClusterViewSet(viewsets.ModelViewSet):
@@ -91,9 +84,6 @@ class ClusterViewSet(viewsets.ModelViewSet):
                     logging.error("an error occured while deleting resources of cluster %s. It seems that this cluster was non functional." % (cluster.id))
                     pass
 
-        # clusters = Cluster.objects.all()
-        # serializer = ClusterSerializer(clusters)
-        # return Response(serializer.data, status=status.HTTP_201_CREATED)
         return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
 
     def _get_existing_account(self, request, cluster):
@@ -191,10 +181,6 @@ class ClusterViewSet(viewsets.ModelViewSet):
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
-##############################
-# Host management
-##############################
-
 def add_host(cluster):
     mister_cluster = MisterClusterImplementation()
     cluster.targeted_slaves_count += 1
@@ -249,11 +235,6 @@ class HostViewSet(viewsets.ModelViewSet):
         return viewsets.ModelViewSet.destroy(self, request, args, kwargs)
 
 
-##############################
-# Credentials management
-##############################
-
-
 class CredentialViewSet(viewsets.ModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
@@ -289,33 +270,6 @@ def credentials_for_user(request, user_id):
     return Response(response)
 
 
-##############################
-# User management
-##############################
-
-#
-# class UserViewSet(viewsets.ModelViewSet):
-#     """
-#     This viewset automatically provides `list`, `create`, `retrieve`,
-#     `update` and `destroy` actions.
-#     """
-#     queryset = get_user_model().objects.all()
-#     serializer_class = UserSerializer
-#     permission_classes = (permissions.IsAuthenticatedOrReadOnly,)
-#
-#     def create(self, request, *args, **kwargs):
-#         data2 = {}
-#         for key in request.data:
-#             data2[key] = request.data[key]
-#         data2[u'credentials'] = []
-#         data2[u'clusters'] = []
-#         serializer = self.get_serializer(data=data2)
-#         serializer.is_valid(raise_exception=True)
-#         self.perform_create(serializer)
-#         headers = self.get_success_headers(serializer.data)
-#         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
-
-
 class ProfileViewSet(viewsets.ReadOnlyModelViewSet):
     """
     This viewset automatically provides `list`, `create`, `retrieve`,
@@ -334,15 +288,3 @@ def rsa_public_key(request, user):
     profile, created = Profile.objects.get_or_create(user=user)
 
     return Response({"public_key": profile.rsa_public})
-
-
-def get_certificate(request, pk):
-    user = get_user_model().objects.filter(id=pk)
-    if user:
-        tmp_folder = "/tmp/%s" % user[0].username
-        from rmapp.core.authenticator import Authenticator
-        authenticator = Authenticator()
-        certificate = authenticator.generate_public_certification(tmp_folder)
-        return HttpResponse(certificate)
-    else:
-        return HttpResponse("Could not generate certificate")
