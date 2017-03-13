@@ -1,0 +1,26 @@
+sudo: false
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "nightly"
+
+matrix:
+  fast_finish: true
+  allow_failures:
+  # - python: "3.5"
+  # - python: "3.6"
+  - python: "nightly"
+
+before_install:
+  - pip install --upgrade pip
+  - pip install https://github.com/DIBBS-project/common-dibbs/archive/master.zip
+  - pip install --requirement dev-requirements.txt
+
+script:
+  - python manage.py test
+  - bash functest.sh
+
+# after_success:
+# after_script: # hacky while trying to improve
+  # - codecov
