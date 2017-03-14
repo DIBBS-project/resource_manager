@@ -2,6 +2,7 @@
 """
 Test the Django service
 """
+import json
 import pathlib
 import sys
 import time
@@ -47,14 +48,57 @@ def assertStatus(response, expected, message=None):
     raise AssertionError(message or "bad status code")
 
 
-def test():
+def test(ar=None, cas=None):
+    ar_sites = ar.app.config.sites = {}
     # sanity check root
     response = requests.get(ROOT)
     assertStatus(response, 200)
 
-    # check with auth
-    response = requests.get(ROOT, headers=ALICE_VALID)
+    # # check with auth
+    # response = requests.get(ROOT, headers=ALICE_VALID)
+    # assertStatus(response, 200)
+
+    # put a credential for a site
+    SITE = 'some-site-id'
+    ar_sites[SITE] = {'url': 'something'}
+    response = requests.post(ROOT + '/credentials/', json={
+        'site': SITE,
+        'name': 'me@site',
+        'credentials': json.dumps({'username': 'magic', 'password': 'johnson'}),
+    })
+    assertStatus(response, 403, 'auth required')
+
+    response = requests.post(ROOT + '/credentials/', headers=ALICE_VALID, json={
+        'site': SITE,
+        'name': 'me@site',
+        'credentials': json.dumps({'username': 'magic', 'password': 'johnson'}),
+    })
+    assertStatus(response, 201)
+    credentials = response.json()
+    assert all(key in credentials for key in ['id', 'created', 'site', 'user'])
+    assert not any(key in credentials for key in ['credentials'])
+    cred_id = credentials['id']
+
+    # - site must exist
+    response = requests.post(ROOT + '/credentials/', headers=ALICE_VALID, json={
+        'site': 'non-existant',
+        'name': 'me@site2',
+        'credentials': json.dumps({'username': 'magic', 'password': 'johnson'}),
+    })
+    assertStatus(response, (400, 500), 'error on nonexistant site')
+
+    # make sure it's a black hole for the user (can't get back plaintext or raw hash)
+    response = requests.get(ROOT + '/credentials/{}/'.format(cred_id))
     assertStatus(response, 200)
+    credentials = response.json()
+    assert 'credentials' not in credentials
+
+    # post cluster
+    response = requests.post(ROOT + '/resources/', headers=ALICE_VALID, json={
+        'credential': cred_id,
+        'site': SITE,
+    })
+    assertStatus(response, 201)
 
 
 def self_test():
@@ -63,10 +107,10 @@ def self_test():
 
 
 def main(argv=None):
-    with FlaskAppManager(sham_cas, port=7000) as cas \
+    with FlaskAppManager(sham_cas, port=7000) as cas, \
             FlaskAppManager(sham_ar, port=8003) as ar:
         self_test()
-        return test()
+        return test(ar=ar, cas=cas)
 
 
 if __name__ == '__main__':

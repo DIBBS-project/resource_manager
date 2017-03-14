@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     # 'sslserver',
     'rest_framework',
     # 'rest_framework.authtoken',
-    'rmapp',
+    # 'rmapp',
+    'rime.apps.RimeConfig',
 ]
 
 MIDDLEWARE_CLASSES = [
@@ -61,7 +62,7 @@ AUTHENTICATION_BACKENDS = [
     'django.contrib.auth.backends.RemoteUserBackend',
 ]
 
-ROOT_URLCONF = 'resource_manager.urls'
+ROOT_URLCONF = 'rime.urls'
 
 TEMPLATES = [
     {
@@ -136,7 +137,10 @@ STATIC_URL = '/static/'
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
         'common_dibbs.django.DRFAuthentication',
-    )
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticatedOrReadOnly',
+    ),
 }
 
 # Logging configuration to display errors

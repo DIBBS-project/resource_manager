@@ -9,6 +9,15 @@ assert not AUTHORIZATION_HEADER.startswith('HTTP')
 app = Flask(__name__)
 
 
+def keyerror_404(mapping, key):
+    try:
+        return jsonify(mapping[key])
+    except KeyError:
+        response = jsonify({'error': 'key not found'})
+        response.status_code = 404
+        return response
+
+
 @app.route('/')
 def root():
     return repr(dict(app.config))
@@ -25,7 +34,13 @@ def shutdown():
 
 @app.route('/sites/<id>/', methods=['GET'])
 def site(id):
-    return jsonify(app.config.sites[id])
+    return keyerror_404(app.config.sites, id)
+    # try:
+    #     return jsonify(app.config.sites[id])
+    # except KeyError:
+    #     response = jsonify({})
+    #     response.status_code = 404
+    #     return response
 
 
 @app.route('/appliances/<id>/', methods=['GET'])

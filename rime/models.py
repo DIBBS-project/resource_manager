@@ -1,6 +1,18 @@
 import uuid
 
+from django.conf import settings
 from django.db import models
+
+
+class Cluster(models.Model):
+    """
+    Credentials that DIBBs users have on deployed clusters. Allows re-use of
+    the accounts for DIBBs Operations rather than creating a new user per-Op.
+    """
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    cluster = models.ForeignKey('Resource', on_delete=models.CASCADE)
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=100, blank=True)
 
 
 class Credential(models.Model):
@@ -18,7 +30,7 @@ class Credential(models.Model):
     credentials = models.TextField()
 
 
-class Cluster(models.Model):
+class Resource(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     # name = models.CharField(max_length=100, blank=True, default='')
     # private_key = models.TextField(max_length=1000, blank=True, default='')
@@ -53,14 +65,3 @@ class Cluster(models.Model):
     #         "user": self.user,
     #         "credentials": crypto.decrypt_credentials(credential.credentials, profile.rsa_private),
     #     }
-
-
-class UserCluster(models.Model):
-    """
-    Credentials that DIBBs users have on deployed clusters. Allows re-use of
-    the accounts for DIBBs Operations rather than creating a new user per-Op.
-    """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    cluster = models.ForeignKey(Cluster, on_delete=models.CASCADE)
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100, blank=True)
