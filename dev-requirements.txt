@@ -1,5 +1,4 @@
 -r requirements.txt
 Flask
 nose
-requests
 wheel

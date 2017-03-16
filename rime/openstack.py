@@ -29,3 +29,19 @@ def nova_client(credentials=None, session=None):
     if session is None:
         session = keystone_session(credentials)
     return NovaClient('2', session=session)
+
+
+def get_flavor(nova_client):
+    try:
+        flavor = next(f.name for f in nova_client.flavors.list())
+    except StopIteration:
+        raise RuntimeError("No flavors found!")
+    return flavor
+
+
+def get_network(nova_client):
+    try:
+        network = next(n.label for n in nova_client.networks.list() if n.label != "ext-net")
+    except StopIteration:
+        raise RuntimeError("No network found!")
+    return network

@@ -8,10 +8,6 @@ from rest_framework import serializers
 from . import models, remote
 
 
-def deobfuscate(value):
-    return json.loads(base64.b64decode(value.encode('utf-8')).decode('utf-8'))
-
-
 class CredentialSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Credential

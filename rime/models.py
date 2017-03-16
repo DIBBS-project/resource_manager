@@ -1,7 +1,22 @@
+import base64
+import json
 import uuid
 
 from django.conf import settings
 from django.db import models
+
+from . import openstack
+from . import remote
+
+
+def lazyprop(fn):
+    attr_name = '_lazy_' + fn.__name__
+    @property
+    def _lazyprop(self):
+        if not hasattr(self, attr_name):
+            setattr(self, attr_name, fn(self))
+        return getattr(self, attr_name)
+    return _lazyprop
 
 
 class Cluster(models.Model):
@@ -19,6 +34,45 @@ class Cluster(models.Model):
     site = models.CharField(max_length=2048)
     implementation = models.CharField(max_length=2048)
 
+    remote_id = models.CharField(max_length=2048)
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # self._keystone_session = None
+        self._imp_data = None
+        self._nova_client = None
+        self._heat_client = None
+
+    @lazyprop
+    def keystone_session(self):
+        # if self._keystone_session is None:
+        creds = self.credential.deobfuscated_credentials
+        creds['auth_url'] = self.site_data['api_url']
+        return openstack.keystone_session(creds)
+        # return self._keystone_session
+
+    @property
+    def heat_client(self):
+        if self._heat_client is None:
+            self._heat_client = openstack.heat_client(session=self.keystone_session)
+        return self._heat_client
+
+    @property
+    def nova_client(self):
+        if self._nova_client is None:
+            self._nova_client = openstack.nova_client(session=self.keystone_session)
+        return self._nova_client
+
+    @property
+    def template(self):
+        if self._imp_data is None:
+            self._imp_data = remote.implementation(self.implementation)
+        return self._imp_data['script']
+
+    @lazyprop
+    def site_data(self):
+        return remote.site(self.site)
+
 
 class Credential(models.Model):
     """
@@ -33,6 +87,10 @@ class Credential(models.Model):
     site = models.CharField(max_length=2048)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='credentials', on_delete=models.CASCADE)
     credentials = models.TextField()
+
+    @property
+    def deobfuscated_credentials(self):
+        return json.loads(base64.b64decode(self.credentials.encode('utf-8')).decode('utf-8'))
 
 
 class Resource(models.Model):
