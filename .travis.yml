@@ -17,6 +17,10 @@ before_install:
   - pip install https://github.com/DIBBS-project/common-dibbs/archive/master.zip
   - pip install --requirement dev-requirements.txt
 
+before_script:
+  - ls -la
+  - sha256sum *.*
+
 script:
   - python manage.py test
   - bash functest.sh
