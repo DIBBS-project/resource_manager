@@ -4,6 +4,7 @@ import uuid
 
 from django.conf import settings
 from django.db import models
+import yaml
 
 from . import openstack
 from . import remote
@@ -51,27 +52,29 @@ class Cluster(models.Model):
         return openstack.keystone_session(creds)
         # return self._keystone_session
 
-    @property
+    @lazyprop
     def heat_client(self):
-        if self._heat_client is None:
-            self._heat_client = openstack.heat_client(session=self.keystone_session)
-        return self._heat_client
+        return openstack.heat_client(session=self.keystone_session)
 
-    @property
+    @lazyprop
     def nova_client(self):
-        if self._nova_client is None:
-            self._nova_client = openstack.nova_client(session=self.keystone_session)
-        return self._nova_client
-
-    @property
-    def template(self):
-        if self._imp_data is None:
-            self._imp_data = remote.implementation(self.implementation)
-        return self._imp_data['script']
+        return openstack.nova_client(session=self.keystone_session)
 
     @lazyprop
     def site_data(self):
         return remote.site(self.site)
+
+    @lazyprop
+    def implementation_data(self):
+        return remote.implementation(self.implementation)
+
+    @lazyprop
+    def template(self):
+        template = self.implementation_data['script']
+        template = yaml.safe_load(template)
+        # the heat client doesn't like dates, which PyYAML helpfully deserialized for us...
+        template['heat_template_version'] = template['heat_template_version'].strftime('%Y-%m-%d')
+        return template
 
 
 class Credential(models.Model):
