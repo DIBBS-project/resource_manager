@@ -55,4 +55,7 @@ python tests/wait_net_service.py -p 8002
 echo -e "\n == Django running ==\n"
 
 $PYTHON tests/functional_tests.py
+$PYTHON manage.py flush --no-input
+$PYTHON tests/functional_tests.py
+
 echo -e "\n ${GREEN}\xE2\x9C\x93 SUCCESS${NC}"

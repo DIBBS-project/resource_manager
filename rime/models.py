@@ -5,14 +5,19 @@ from django.db import models
 
 
 class Cluster(models.Model):
-    """
-    Credentials that DIBBs users have on deployed clusters. Allows re-use of
-    the accounts for DIBBs Operations rather than creating a new user per-Op.
-    """
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    cluster = models.ForeignKey('Resource', on_delete=models.CASCADE)
-    username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100, blank=True)
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # name = models.CharField(max_length=100, blank=True, default='')
+    # private_key = models.TextField(max_length=1000, blank=True, default='')
+    # public_key = models.TextField(max_length=1000, blank=True, default='')
+
+    # status = models.CharField(max_length=100, blank=True, default='IDLE')
+    # hints = models.CharField(max_length=100, blank=True, default='{}')
+    root_owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.PROTECT)
+    credential = models.ForeignKey('Credential', on_delete=models.PROTECT)
+
+    appliance = models.CharField(max_length=2048)
+    site = models.CharField(max_length=2048)
+    implementation = models.CharField(max_length=2048)
 
 
 class Credential(models.Model):
@@ -31,37 +36,14 @@ class Credential(models.Model):
 
 
 class Resource(models.Model):
+    """
+    High-level "Resource" abstraction on top of real computing resources that
+    DIBBs users have on deployed clusters. Creates accounts for a cluster
+    on-first-use that can be reused for other DIBBs Operations rather than
+    creating a new user per-Op.
+    """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    # name = models.CharField(max_length=100, blank=True, default='')
-    # private_key = models.TextField(max_length=1000, blank=True, default='')
-    # public_key = models.TextField(max_length=1000, blank=True, default='')
-
-    # status = models.CharField(max_length=100, blank=True, default='IDLE')
-    # hints = models.CharField(max_length=100, blank=True, default='{}')
-    root_owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.PROTECT)
-    credential = models.ForeignKey('Credential', on_delete=models.PROTECT)
-
-    appliance = models.CharField(max_length=2048)
-    site = models.CharField(max_length=2048)
-    implementation = models.CharField(max_length=2048)
-    # service_url
-    #
-    # def get_full_credentials(self):
-    #     appl_impl = remote.appliance_impl_name_get(str(self.appliance_impl))
-    #
-    #     cred_filter = {
-    #         'site_name': appl_impl.site,
-    #     }
-    #     if self.credential == '':
-    #         cred_filter['user'] = self.user
-    #     else:
-    #         cred_filter['name'] = self.credential
-    #
-    #     credential = Credential.objects.filter(**cred_filter).first()
-    #     profile = Profile.objects.get(user=self.user)
-    #
-    #     return {
-    #         "site": remote.sites_name_get(credential.site_name),
-    #         "user": self.user,
-    #         "credentials": crypto.decrypt_credentials(credential.credentials, profile.rsa_private),
-    #     }
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    cluster = models.ForeignKey('Cluster', on_delete=models.CASCADE)
+    username = models.CharField(max_length=100)
+    password = models.CharField(max_length=100, blank=True)

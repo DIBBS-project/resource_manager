@@ -45,9 +45,9 @@ def site(id):
 
 @app.route('/appliances/<id>/', methods=['GET'])
 def appliance(id):
-    return jsonify(app.config.apps[id])
+    return keyerror_404(app.config.apps, id)
 
 
 @app.route('/implementations/<id>/', methods=['GET'])
 def implementation(id):
-    return jsonify(app.config.imps[id])
+    return keyerror_404(app.config.imps, id)
