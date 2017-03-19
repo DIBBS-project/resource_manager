@@ -65,11 +65,12 @@ def test(ar=None, cas=None):
     # response = requests.get(ROOT, headers=ALICE_VALID)
     # assertStatus(response, 200)
 
-    # put a credential for a site
+    # load fake site
     SITE = 'some-site-id'
     CRED_B64JSON = obfuscate({'username': 'magic', 'password': 'johnson', 'project_name': 'spartans'})
     ar_sites[SITE] = {'api_url': 'http://localhost:44000/v3'}
 
+    print('* TEST: refuse unauthed credential create')
     response = requests.post(ROOT + '/credentials/', json={
         'site': SITE,
         'name': 'me@site',
@@ -77,6 +78,7 @@ def test(ar=None, cas=None):
     })
     assertStatus(response, 403, 'auth required')
 
+    print('* TEST: create credential')
     response = requests.post(ROOT + '/credentials/', headers=ALICE_VALID, json={
         'site': SITE,
         'name': 'me@site',
@@ -89,6 +91,7 @@ def test(ar=None, cas=None):
     cred_id = credentials['id']
 
     # - site must exist
+    print('* TEST: refuse create credential site missing')
     response = requests.post(ROOT + '/credentials/', headers=ALICE_VALID, json={
         'site': 'non-existant',
         'name': 'me@site2',
@@ -96,20 +99,33 @@ def test(ar=None, cas=None):
     })
     assertStatus(response, (400, 500), 'should error on nonexistant site')
 
+    print('* TEST: list credentials')
     response = requests.get(ROOT + '/credentials/')
     assertStatus(response, 200)
     all_credentials = response.json()
     assert len(all_credentials) == 1
 
     # make sure it's a black hole for the user (can't get back plaintext or raw hash)
+    print('* TEST: write-only credential data')
     response = requests.get(ROOT + '/credentials/{}/'.format(cred_id))
     assertStatus(response, 200)
     credentials = response.json()
     assert 'credentials' not in credentials
 
-    # post cluster
+    # fake implementation in flask
     IMPL = 'some-impl-id'
-    ar_imps[IMPL] = {'site': SITE, 'appliance': 'magic', 'script': 'hello world'}
+    ar_imps[IMPL] = {'site': SITE, 'appliance': 'magic', 'script': '''\
+heat_template_version: 2014-04-04
+script: something'''}
+
+    print('* TEST: create cluster, refuse if missing implementation')
+    response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={
+        'credential': cred_id,
+    })
+    assertStatus(response, 400)
+
+    # post cluster
+    print('* TEST: create cluster')
     response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={
         'credential': cred_id,
         'implementation': IMPL,
@@ -117,6 +133,7 @@ def test(ar=None, cas=None):
     assertStatus(response, 201)
 
     # credential must exist
+    print('* TEST: create cluster, credential must exist')
     response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={
         'credential': 'garbage',
         'implementation': IMPL,
@@ -124,6 +141,7 @@ def test(ar=None, cas=None):
     assertStatus(response, (400, 500), 'should error on nonnexistant credential')
 
     # implementation must exist
+    print('* TEST: create cluster, implementation must exist')
     response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={
         'credential': cred_id,
         'implementation': 'non-existant',
@@ -132,6 +150,7 @@ def test(ar=None, cas=None):
     assert all(word in response.text.lower() for word in ['implementation', 'found'])
 
     # implementation site must match credential
+    print('* TEST: create cluster, implementation site must match credential site')
     IMPL2 = 'some-other-impl-id'
     ar_imps[IMPL2] = {'site': 'other-site', 'appliance': 'magic'}
     response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={

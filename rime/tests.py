@@ -11,7 +11,6 @@ from rest_framework.test import APIRequestFactory, APIClient
 
 from . import models
 from . import openstack
-from . import serializers
 
 
 def obfuscate(data):
@@ -50,6 +49,12 @@ class TestCredentialObject(TestCredentialBase):
             credentials=obfuscate({'data': 'data'}),
         )
 
+    def test_deobfuscate(self):
+        creds = {'data': 'data'}
+        self.assertEqual(
+            self.model(credentials=obfuscate(creds)).deobfuscated_credentials,
+            creds
+        )
 
 class TestCredentialAccess(TestCredentialBase):
     def test_list(self):
@@ -246,9 +251,7 @@ from rime.views import ClusterViewSet
 
 class TestClusterCreationSerialization(TestClusterBase):
     @requests_mock.mock()
-    # @unittest.mock.patch('rime.views.ClusterViewSet.perform_create', return)
     def test_create(self, m):#, mcvs):
-        # assert isinstance(mcvs, unittest.mock.Mock), 'self-test...'
         imp_id = 'impl_x'
         site_id = self.cred.site
         keystone = 'http://localhost:44000/v3'

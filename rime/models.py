@@ -1,13 +1,22 @@
 import base64
 import json
+import logging
 import uuid
 
 from django.conf import settings
 from django.db import models
+import heatclient.exc as heat_exc
 import yaml
 
 from . import openstack
 from . import remote
+
+
+logger = logging.getLogger(__name__)
+
+
+def deobfuscate(serialized_data):
+    return json.loads(base64.b64decode(serialized_data.encode('utf-8')).decode('utf-8'))
 
 
 def lazyprop(fn):
@@ -39,10 +48,13 @@ class Cluster(models.Model):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # self._keystone_session = None
-        self._imp_data = None
-        self._nova_client = None
-        self._heat_client = None
+
+    def delete(self):
+        try:
+            self.heat_client.stacks.delete(self.remote_id)
+        except heat_exc.HTTPNotFound as e:
+            logger.info('Stack {}: Remote stack {} already gone (404 from service)'.format(self.id, self.remote_id))
+        super().delete()
 
     @lazyprop
     def keystone_session(self):
@@ -93,7 +105,8 @@ class Credential(models.Model):
 
     @property
     def deobfuscated_credentials(self):
-        return json.loads(base64.b64decode(self.credentials.encode('utf-8')).decode('utf-8'))
+        """Reverse the base64-encoded JSON."""
+        return deobfuscate(self.credentials)
 
 
 class Resource(models.Model):

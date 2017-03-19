@@ -6,6 +6,7 @@ import requests
 from rest_framework import serializers
 
 from . import models, remote
+from .models import deobfuscate
 
 
 class CredentialSerializer(serializers.ModelSerializer):
@@ -40,8 +41,9 @@ class CredentialSerializer(serializers.ModelSerializer):
 class ClusterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Cluster
-        fields = ('id', 'root_owner', 'credential', 'implementation') # 'site', 'appliance'
-        read_only_fields = ('id', 'root_owner')
+        fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id') # 'site', 'appliance'
+        # read_only_fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id')
+        read_only_fields = ('id', 'root_owner', 'remote_id')
         # extra_kwargs = {
         #     'password': {'write_only': True}
         # }

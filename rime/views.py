@@ -3,6 +3,7 @@ import json
 import logging
 
 from django.conf import settings
+import heatclient.exc as heat_exc
 from rest_framework import viewsets
 
 from . import models
@@ -31,30 +32,26 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
         template = cluster.template
         parameters = {
-            'cluster_size': 1,
-            'image_name': 'CENTOS-7-HADOOP',
-            'user_name': 'root',
-            'flavor_name': openstack.get_flavor(cluster.nova_client),
             'network_name': openstack.get_network(cluster.nova_client),
-            # "allowed_ips": public_ips,
-            'allowed_ip': settings.PUBLIC_IP + '/32', # see above
+            'allowed_ip': settings.PUBLIC_IP + '/32', # only allow the LL controller to access the agents
         }
+        # parameters.update(cluster.hints)
         logger.info('Stack parameters: {}'.format(json.dumps(parameters)))
 
-        environment = {
-            'parameters': parameters
-        }
         stack = {
             'stack_name': 'LL-{}'.format(cluster.id),#cluster.name,
             'template': cluster.template,
-            'environment': environment,
+            'environment': {
+                'parameters': parameters
+            },
             'files': {},
             'parameters': {},
             'disable_rollback': True,
         }
         try:
             response = cluster.heat_client.stacks.create(**stack)
-        except heatclient.exc.HTTPBadRequest as e:
+        except heat_exc.HTTPBadRequest as e:
+            cluster.delete()
             raise
 
         logger.info('Created stack {}'.format(response['stack']['id']))
