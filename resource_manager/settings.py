@@ -192,3 +192,5 @@ DIBBS = {
 }
 
 PUBLIC_IP = requests.get('https://httpbin.org/ip').json()['origin'].strip()
+
+CELERY_BROKER_URL = 'redis://localhost:6379/0'

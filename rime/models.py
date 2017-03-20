@@ -10,6 +10,7 @@ import yaml
 
 from . import openstack
 from . import remote
+from . import tasks
 
 
 logger = logging.getLogger(__name__)
@@ -45,6 +46,7 @@ class Cluster(models.Model):
     implementation = models.CharField(max_length=2048)
 
     remote_id = models.CharField(max_length=2048)
+    remote_status = models.CharField(max_length=200, default='UNCREATED')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -87,6 +89,13 @@ class Cluster(models.Model):
         # the heat client doesn't like dates, which PyYAML helpfully deserialized for us...
         template['heat_template_version'] = template['heat_template_version'].strftime('%Y-%m-%d')
         return template
+
+    def get_stack(self):
+        return self.heat_client.stacks.get(self.remote_id)
+
+    def monitor_transition(self):
+        logger.info('Beginning remote state monitoring')
+        return tasks.monitor_cluster.delay(self.id)
 
 
 class Credential(models.Model):

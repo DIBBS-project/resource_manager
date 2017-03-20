@@ -41,9 +41,9 @@ class CredentialSerializer(serializers.ModelSerializer):
 class ClusterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Cluster
-        fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id') # 'site', 'appliance'
+        fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id', 'remote_status') # 'site', 'appliance'
         # read_only_fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id')
-        read_only_fields = ('id', 'root_owner', 'remote_id')
+        read_only_fields = ('id', 'root_owner', 'remote_id', 'remote_status')
         # extra_kwargs = {
         #     'password': {'write_only': True}
         # }

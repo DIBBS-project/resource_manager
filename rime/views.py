@@ -4,7 +4,10 @@ import logging
 
 from django.conf import settings
 import heatclient.exc as heat_exc
+# from rest_framework import mixins
 from rest_framework import viewsets
+from rest_framework.decorators import detail_route, list_route
+from rest_framework.response import Response
 
 from . import models
 from . import openstack
@@ -58,6 +61,27 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
         cluster.remote_id = response['stack']['id']
         cluster.save()
+
+    @detail_route(methods=['get'])
+    def monitor(self, request, pk=None):
+        cluster = self.get_object()
+        # serializer = self.serializer_class(data=request.data)
+        cb = cluster.monitor_transition()
+        return Response({'result': repr(cb)})
+
+
+class ResourceViewSet(viewsets.ViewSet):
+    def create(self, request):
+        pass
+
+    def list(self, request):
+        pass
+
+    def retrieve(self, request, pk=None):
+        pass
+
+    def destroy(self, request, pk=None):
+        pass
 
 
 def get_or_create_resource(user, appliance: 'identifier', hints: dict = None):
