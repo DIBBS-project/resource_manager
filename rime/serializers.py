@@ -41,9 +41,14 @@ class CredentialSerializer(serializers.ModelSerializer):
 class ClusterSerializer(serializers.ModelSerializer):
     class Meta:
         model = models.Cluster
-        fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id', 'remote_status') # 'site', 'appliance'
-        # read_only_fields = ('id', 'root_owner', 'credential', 'implementation', 'remote_id')
-        read_only_fields = ('id', 'root_owner', 'remote_id', 'remote_status')
+        fields = (
+            'id', 'root_owner', 'credential', 'implementation', 'remote_id',
+            'remote_status', 'status', 'address',
+        )
+        read_only_fields = (
+            'id', 'root_owner', 'remote_id', 'remote_status', 'status',
+            'address',
+        )
         # extra_kwargs = {
         #     'password': {'write_only': True}
         # }
@@ -72,3 +77,10 @@ class ClusterSerializer(serializers.ModelSerializer):
         if data['credential'].site != data['site']:
             raise serializers.ValidationError("Credential site doesn't match Implementation site")
         return data
+
+
+class ResourceSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = models.Resource
+        fields = ('id', 'user', 'cluster', 'hints', 'username', 'password')
+        read_only_fields = ('id', 'user', 'cluster', 'hints', 'username', 'password')

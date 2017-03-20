@@ -36,7 +36,8 @@ class Cluster(models.Model):
     # private_key = models.TextField(max_length=1000, blank=True, default='')
     # public_key = models.TextField(max_length=1000, blank=True, default='')
 
-    # status = models.CharField(max_length=100, blank=True, default='IDLE')
+    status = models.CharField(max_length=100, default='INIT')
+    address = models.CharField(max_length=100)
     # hints = models.CharField(max_length=100, blank=True, default='{}')
     root_owner = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='clusters', on_delete=models.PROTECT)
     credential = models.ForeignKey('Credential', on_delete=models.PROTECT)
@@ -46,7 +47,7 @@ class Cluster(models.Model):
     implementation = models.CharField(max_length=2048)
 
     remote_id = models.CharField(max_length=2048)
-    remote_status = models.CharField(max_length=200, default='UNCREATED')
+    remote_status = models.CharField(max_length=200, default='NONE')
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -57,6 +58,42 @@ class Cluster(models.Model):
         except heat_exc.HTTPNotFound as e:
             logger.info('Stack {}: Remote stack {} already gone (404 from service)'.format(self.id, self.remote_id))
         super().delete()
+
+    def do_create(self):
+        cluster = self
+        template = cluster.template
+        parameters = {
+            'network_name': openstack.get_network(cluster.nova_client),
+            'allowed_ip': settings.PUBLIC_IP + '/32', # only allow the LL controller to access the agents
+        }
+        # parameters.update(cluster.hints)
+        logger.info('Stack parameters: {}'.format(json.dumps(parameters)))
+
+        stack_params = {
+            'stack_name': 'LL-{}'.format(cluster.id),#cluster.name,
+            'template': cluster.template,
+            'environment': {
+                'parameters': parameters
+            },
+            'files': {},
+            'parameters': {},
+            'disable_rollback': True,
+        }
+        try:
+            response = cluster.heat_client.stacks.create(**stack_params)
+        except heat_exc.HTTPBadRequest as e:
+            cluster.delete()
+            raise
+
+        stack_id = response['stack']['id']
+        cluster.remote_id = stack_id
+        logger.info('Created stack {}'.format(stack_id))
+
+        stack = cluster.heat_client.stacks.get(stack_id)
+        cluster.status = 'BUILDING'
+        cluster.remote_status = stack.stack_status
+        cluster.save()
+        cluster.monitor_startup()
 
     @lazyprop
     def keystone_session(self):
@@ -76,7 +113,10 @@ class Cluster(models.Model):
 
     @lazyprop
     def site_data(self):
-        return remote.site(self.site)
+        if self.site:
+            return remote.site(self.site)
+        else:
+            return remote.site(self.implementation_data['site'])
 
     @lazyprop
     def implementation_data(self):
@@ -96,6 +136,10 @@ class Cluster(models.Model):
     def monitor_transition(self):
         logger.info('Beginning remote state monitoring')
         return tasks.monitor_cluster.delay(self.id)
+
+    def monitor_startup(self):
+        logger.info('Beginning remote state monitoring (startup)')
+        return tasks.monitor_startup.delay(self.id)
 
 
 class Credential(models.Model):
@@ -127,6 +171,10 @@ class Resource(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    hints = models.TextField()
     cluster = models.ForeignKey('Cluster', on_delete=models.CASCADE)
     username = models.CharField(max_length=100)
-    password = models.CharField(max_length=100, blank=True)
+    password = models.CharField(max_length=100)
+
+    def async_create(self):
+        return tasks.monitor_startup_resource.delay(self.id)

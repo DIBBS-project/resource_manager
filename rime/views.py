@@ -32,35 +32,7 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         cluster = serializer.save(root_owner=self.request.user)
-
-        template = cluster.template
-        parameters = {
-            'network_name': openstack.get_network(cluster.nova_client),
-            'allowed_ip': settings.PUBLIC_IP + '/32', # only allow the LL controller to access the agents
-        }
-        # parameters.update(cluster.hints)
-        logger.info('Stack parameters: {}'.format(json.dumps(parameters)))
-
-        stack = {
-            'stack_name': 'LL-{}'.format(cluster.id),#cluster.name,
-            'template': cluster.template,
-            'environment': {
-                'parameters': parameters
-            },
-            'files': {},
-            'parameters': {},
-            'disable_rollback': True,
-        }
-        try:
-            response = cluster.heat_client.stacks.create(**stack)
-        except heat_exc.HTTPBadRequest as e:
-            cluster.delete()
-            raise
-
-        logger.info('Created stack {}'.format(response['stack']['id']))
-
-        cluster.remote_id = response['stack']['id']
-        cluster.save()
+        cluster.do_create()
 
     @detail_route(methods=['get'])
     def monitor(self, request, pk=None):
@@ -71,17 +43,63 @@ class ClusterViewSet(viewsets.ModelViewSet):
 
 
 class ResourceViewSet(viewsets.ViewSet):
-    def create(self, request):
-        pass
 
-    def list(self, request):
-        pass
+    def create(self, request):
+        try:
+            hints = request.data['hints']
+            impl = hints['implementation']
+            cred = hints['credentials']
+        except KeyError:
+            logger.info('Invalid hints')
+            return Response({'error': 'implementation/credentials not provided in hints'}, status=400)
+
+        # search in existing resources
+        try:
+            cluster = models.Cluster.objects.get(implementation=impl)
+        except models.Cluster.DoesNotExist:
+            logger.info('No matching cluster found, building')
+            try:
+                credential = models.Credential.objects.get(id=cred)
+            except models.Credential.DoesNotExist:
+                return Response({'error': 'credential doesn\'t exist'}, status=400)
+            if credential.user != request.user:
+                return Response({'error': 'user does not have that credential'}, status=400)
+
+            logger.info('Building cluster')
+            cluster = models.Cluster.objects.create(
+                root_owner=request.user,
+                credential=credential,
+                implementation=impl,
+            )
+            cluster.do_create()
+        else:
+            logger.info('Found existing matching cluster')
+
+        resource = models.Resource(
+            user=request.user,
+            hints=json.dumps(hints),
+            cluster=cluster,
+        )
+        resource.save()
+        logger.info('Created resource {}'.format(resource.id))
+        resource.async_create()
+        serializer = serializers.ResourceSerializer(resource)
+        return Response(serializer.data, status=201)
+
+    # def list(self, request):
+    #     pass
 
     def retrieve(self, request, pk=None):
-        pass
+        try:
+            resource = models.Resource.objects.get(id=pk)
+        except models.Resource.DoesNotExist:
+            return Response(status=404)
 
-    def destroy(self, request, pk=None):
-        pass
+        serializer = serializers.ResourceSerializer(resource)
+        return Response(serializer.data)
+
+    # def destroy(self, request, pk=None):
+    #     pass
 
 
 def get_or_create_resource(user, appliance: 'identifier', hints: dict = None):
