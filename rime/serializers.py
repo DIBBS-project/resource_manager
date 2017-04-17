@@ -9,33 +9,33 @@ from . import models, remote
 from .models import deobfuscate
 
 
-class CredentialSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.Credential
-        fields = ('id', 'name', 'site', 'user', 'created', 'credentials')
-        read_only_fields = ('id', 'user')
-        extra_kwargs = {
-            'credentials': {'write_only': True}
-        }
-
-    def validate_site(self, name):
-        try:
-            site_data = remote.site(name)
-        except requests.HTTPError as e:
-            raise serializers.ValidationError("Site not found")
-        return name
-
-    def validate_credentials(self, value):
-        try:
-            cred_data = deobfuscate(value)
-        except (json.decoder.JSONDecodeError, UnicodeDecodeError):
-            raise serializers.ValidationError("Invalid base64-encoded JSON")
-
-        missing_fields = {'username', 'password', 'project_name'} - set(cred_data)
-        if missing_fields:
-            raise serializers.ValidationError('Missing fields: {}'.format(missing_fields))
-
-        return value
+# class CredentialSerializer(serializers.ModelSerializer):
+#     class Meta:
+#         model = models.Credential
+#         fields = ('id', 'name', 'site', 'user', 'created', 'credentials')
+#         read_only_fields = ('id', 'user')
+#         extra_kwargs = {
+#             'credentials': {'write_only': True}
+#         }
+#
+#     def validate_site(self, name):
+#         try:
+#             site_data = remote.site(name)
+#         except requests.HTTPError as e:
+#             raise serializers.ValidationError("Site not found")
+#         return name
+#
+#     def validate_credentials(self, value):
+#         try:
+#             cred_data = deobfuscate(value)
+#         except (json.decoder.JSONDecodeError, UnicodeDecodeError):
+#             raise serializers.ValidationError("Invalid base64-encoded JSON")
+#
+#         missing_fields = {'username', 'password', 'project_name'} - set(cred_data)
+#         if missing_fields:
+#             raise serializers.ValidationError('Missing fields: {}'.format(missing_fields))
+#
+#         return value
 
 
 class ClusterSerializer(serializers.ModelSerializer):

@@ -18,12 +18,12 @@ from . import serializers
 logger = logging.getLogger(__name__)
 
 
-class CredentialViewSet(viewsets.ModelViewSet):
-    queryset = models.Credential.objects.all()
-    serializer_class = serializers.CredentialSerializer
-
-    def perform_create(self, serializer):
-        serializer.save(user=self.request.user)
+# class CredentialViewSet(viewsets.ModelViewSet):
+#     queryset = models.Credential.objects.all()
+#     serializer_class = serializers.CredentialSerializer
+#
+#     def perform_create(self, serializer):
+#         serializer.save(user=self.request.user)
 
 
 class ClusterViewSet(viewsets.ModelViewSet):

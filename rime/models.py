@@ -142,24 +142,24 @@ class Cluster(models.Model):
         return tasks.monitor_startup.delay(self.id)
 
 
-class Credential(models.Model):
-    """
-    Credentials that DIBBs users have with cloud (e.g. OpenStack) service
-    providers. Stored HACK in plaintext TODO with reversable encryption as we must be
-    able to pull out the plaintext credentials to interact with the cloud
-    service.
-    """
-    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    created = models.DateTimeField(auto_now_add=True)
-    name = models.CharField(max_length=100)
-    site = models.CharField(max_length=2048)
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='credentials', on_delete=models.CASCADE)
-    credentials = models.TextField()
-
-    @property
-    def deobfuscated_credentials(self):
-        """Reverse the base64-encoded JSON."""
-        return deobfuscate(self.credentials)
+# class Credential(models.Model):
+#     """
+#     Credentials that DIBBs users have with cloud (e.g. OpenStack) service
+#     providers. Stored HACK in plaintext TODO with reversable encryption as we must be
+#     able to pull out the plaintext credentials to interact with the cloud
+#     service.
+#     """
+#     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+#     created = models.DateTimeField(auto_now_add=True)
+#     name = models.CharField(max_length=100)
+#     site = models.CharField(max_length=2048)
+#     user = models.ForeignKey(settings.AUTH_USER_MODEL, related_name='credentials', on_delete=models.CASCADE)
+#     credentials = models.TextField()
+#
+#     @property
+#     def deobfuscated_credentials(self):
+#         """Reverse the base64-encoded JSON."""
+#         return deobfuscate(self.credentials)
 
 
 class Resource(models.Model):
