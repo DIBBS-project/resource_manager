@@ -6,7 +6,6 @@ import uuid
 from django.conf import settings
 from django.db import models
 import heatclient.exc as heat_exc
-import yaml
 
 from . import openstack
 from . import remote
@@ -124,10 +123,7 @@ class Cluster(models.Model):
 
     @lazyprop
     def template(self):
-        template = self.implementation_data['script']
-        template = yaml.safe_load(template)
-        # the heat client doesn't like dates, which PyYAML helpfully deserialized for us...
-        template['heat_template_version'] = template['heat_template_version'].strftime('%Y-%m-%d')
+        template = self.implementation_data['script_parsed']
         return template
 
     def get_stack(self):

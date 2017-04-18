@@ -10,6 +10,9 @@ rmapp/migrations
 # explicit add only
 *.ipynb
 
+# TEMP
+dump.rdb
+
 # MAC OS
 
 *.DS_Store

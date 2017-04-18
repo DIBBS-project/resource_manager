@@ -6,6 +6,7 @@ import base64
 import json
 import pathlib
 import sys
+import textwrap
 import time
 
 import requests
@@ -114,9 +115,18 @@ def test(ar=None, cas=None):
 
     # fake implementation in flask
     IMPL = 'some-impl-id'
-    ar_imps[IMPL] = {'site': SITE, 'appliance': 'magic', 'script': '''\
-heat_template_version: 2014-04-04
-script: something'''}
+    ar_imps[IMPL] = {
+        'site': SITE,
+        'appliance': 'magic',
+        'script': textwrap.dedent('''\
+            heat_template_version: 2014-04-04
+            script: something
+        '''),
+        'script_parsed': json.dumps({
+            'heat_template_version': '2014-04-04',
+            'script': 'something',
+        }),
+    }
 
     print('* TEST: create cluster, refuse if missing implementation')
     response = requests.post(ROOT + '/clusters/', headers=ALICE_VALID, json={
